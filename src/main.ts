@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { compileProject, checkSyntax } from "./compiler";
+import { compileProject, checkSyntax, runBinary } from "./compiler";
+import { ChildProcess } from "child_process";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -11,11 +12,15 @@ if (started) {
 // Fix for SUID sandbox helper issue in some environments
 app.commandLine.appendSwitch("no-sandbox");
 
+let mainWindow: BrowserWindow | null = null;
+let runningProcess: ChildProcess | null = null;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
+    autoHideMenuBar: true, // Hide the native menu bar
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -43,7 +48,42 @@ app.on("ready", () => {
       return await compileProject(files, activeFileId);
     } catch (error) {
       const err = error as Error;
-      return { success: false, output: "", error: err.message };
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.on("run-project", (event, exePath, cwd) => {
+    if (runningProcess) {
+      runningProcess.kill();
+    }
+
+    runningProcess = runBinary(
+      exePath,
+      cwd,
+      (data) => {
+        if (mainWindow) {
+          mainWindow.webContents.send("process-output", data);
+        }
+      },
+      (code) => {
+        if (mainWindow) {
+          mainWindow.webContents.send("process-exit", code);
+        }
+        runningProcess = null;
+      }
+    );
+  });
+
+  ipcMain.on("write-stdin", (event, data) => {
+    if (runningProcess && runningProcess.stdin) {
+      runningProcess.stdin.write(data + "\n");
+    }
+  });
+
+  ipcMain.on("kill-process", () => {
+    if (runningProcess) {
+      runningProcess.kill();
+      runningProcess = null;
     }
   });
 

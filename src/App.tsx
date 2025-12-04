@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
+import { TitleBar } from "./components/TitleBar";
 import { FileSystemItem, LogMessage, LogType } from "./types";
 
 // Helper to flatten tree for compiler (temporary until backend supports tree)
@@ -390,6 +391,21 @@ export default function CCodeStudio() {
     return () => clearTimeout(timer);
   }, [files]);
 
+  useEffect(() => {
+    // Listen for process output
+    window.electron.onProcessOutput((data) => {
+      addLog("info", data);
+    });
+
+    window.electron.onProcessExit((code) => {
+      addLog("info", `\nProcess exited with code ${code}`);
+    });
+
+    return () => {
+      // Cleanup listeners if needed (though electron bridge handles this mostly)
+    };
+  }, []);
+
   const handleRun = async () => {
     if (isCompiling) return;
     setIsCompiling(true);
@@ -399,14 +415,11 @@ export default function CCodeStudio() {
       // Pass the entire tree structure to the backend
       const result = await window.electron.compileProject(files, activeFileId);
 
-      if (result.success) {
-        addLog("success", "Build successful.");
-        const lines = result.output.split("\n");
-        lines.forEach((line: string) => {
-          if (line) addLog("info", `> ${line}`);
-        });
+      if (result.success && result.exePath && result.cwd) {
+        addLog("success", "Build successful. Running...");
+        window.electron.runProject(result.exePath, result.cwd);
       } else {
-        addLog("error", "Error:");
+        addLog("error", "Build failed:");
         addLog("error", result.error || "Unknown error");
       }
     } catch (e) {
@@ -416,10 +429,17 @@ export default function CCodeStudio() {
     }
   };
 
+  const handleTerminalInput = (input: string) => {
+    window.electron.writeStdin(input);
+    addLog("info", input + "\n"); // Echo input to terminal
+  };
+
   return (
-    <div className="flex h-screen w-full bg-background text-foreground font-sans overflow-hidden">
-      <div className="w-64 flex-shrink-0">
-        <Sidebar
+    <div className="flex flex-col h-screen w-full bg-background text-foreground font-sans overflow-hidden">
+      <TitleBar />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 flex-shrink-0">
+          <Sidebar
           files={files}
           activeFileId={activeFileId}
           onFileSelect={(file) => setActiveFileId(file.id)}
@@ -448,7 +468,8 @@ export default function CCodeStudio() {
           )}
         </div>
         <div className="h-1/3 flex-shrink-0">
-          <TerminalPanel logs={logs} onClear={() => setLogs([])} />
+          <TerminalPanel logs={logs} onClear={() => setLogs([])} onInput={handleTerminalInput} />
+        </div>
         </div>
       </div>
     </div>

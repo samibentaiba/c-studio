@@ -5,7 +5,12 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 interface Window {
   electron: {
-    compileProject: (files: unknown, activeFileId?: string) => Promise<{ success: boolean; output: string; error?: string }>;
+    compileProject: (files: unknown, activeFileId?: string) => Promise<{ success: boolean; exePath?: string; cwd?: string; error?: string }>;
+    runProject: (exePath: string, cwd: string) => void;
+    writeStdin: (data: string) => void;
+    killProcess: () => void;
+    onProcessOutput: (callback: (data: string) => void) => void;
+    onProcessExit: (callback: (code: number) => void) => void;
     checkSyntax: (files: unknown) => Promise<{ file: string; line: number; column: number; message: string; severity: "error" | "warning" }[]>;
   };
 }

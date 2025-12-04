@@ -1,7 +1,7 @@
 import path from "path";
 import { app } from "electron";
 import fs from "fs";
-import { execFile } from "child_process";
+import { execFile, spawn, ChildProcess } from "child_process";
 import os from "os";
 
 // 1. Locate the Compiler
@@ -30,7 +30,8 @@ export interface FileSystemItem {
 
 interface CompileResult {
   success: boolean;
-  output: string;
+  exePath?: string;
+  cwd?: string;
   error?: string;
 }
 
@@ -78,7 +79,6 @@ export const compileProject = async (
       if (!fs.existsSync(gcc)) {
         resolve({
           success: false,
-          output: "",
           error: `Critical Error: Compiler not found at:\n${gcc}\n\nDid you extract MinGW to 'resources/mingw64'?`
         });
         return;
@@ -89,24 +89,28 @@ export const compileProject = async (
       writeFilesRecursively(items, tempDir, cFiles, tempDir);
 
       if (cFiles.length === 0) {
-        resolve({ success: false, output: "", error: "No .c files found to compile." });
+        resolve({ success: false, error: "No .c files found to compile." });
         return;
       }
 
+      // Create a wrapper header to force unbuffered stdout/stderr
+      // This ensures printf output appears before scanf blocks for input
+      const unbufferHeader = path.join(tempDir, "_cstudio_unbuffer.h");
+      fs.writeFileSync(unbufferHeader, `#ifndef _CSTUDIO_UNBUFFER_H
+#define _CSTUDIO_UNBUFFER_H
+#include <stdio.h>
+__attribute__((constructor)) static void _cstudio_init(void) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+}
+#endif
+`);
+
       // Filter C files:
-      // 1. Always include the active file (if it's a .c file)
-      // 2. Include other .c files ONLY IF they don't have a "main" function
-      // This allows multiple "main" files to coexist in the project, but only one is compiled at a time.
-      
       let filesToCompile = cFiles;
       let activeRelativePath: string | null = null;
 
       if (activeFileId) {
-        // Find active file path relative to tempDir
-        // We need to traverse the items to find the name/path of the active file
-        // But cFiles contains relative paths.
-        // Let's re-traverse to find the active file's relative path.
-        
         const findActivePath = (items: FileSystemItem[], currentPath: string): string | null => {
           for (const item of items) {
             const itemPath = path.join(currentPath, item.name);
@@ -125,74 +129,91 @@ export const compileProject = async (
 
         if (activeRelativePath && activeRelativePath.endsWith(".c")) {
           filesToCompile = cFiles.filter(file => {
-            // Always keep the active file
             if (file === activeRelativePath) return true;
-
-            // For other files, check if they have 'main'
             const content = fs.readFileSync(path.join(tempDir, file), 'utf-8');
-            // Simple regex to detect main function: int main(...) or void main(...)
-            // We look for "main" followed by optional whitespace and "("
-            // We also check it's not part of another word (boundary \b)
             const hasMain = /\bmain\s*\(/.test(content);
-            
             return !hasMain;
           });
         }
       }
 
       if (filesToCompile.length === 0) {
-         resolve({ success: false, output: "", error: "No suitable source files found to compile." });
+         resolve({ success: false, error: "No suitable source files found to compile." });
          return;
       }
 
       // 4. Compile
-      // IMPORTANT: We add the bin directory to PATH so gcc can find ld.exe (linker)
       const env = { ...process.env, PATH: `${binDir};${process.env.PATH}` };
 
       execFile(
         gcc,
-        [...filesToCompile, "-o", "app.exe"],
+        [...filesToCompile, "-include", "_cstudio_unbuffer.h", "-o", "app.exe"],
         { cwd: tempDir, env },
         (error, stdout, stderr) => {
           if (error) {
             resolve({
               success: false,
-              output: stdout,
-              error: stderr || error.message,
+              error: stderr || error.message || stdout,
             });
             return;
           }
 
-          // 5. Run the Application
           // Determine the working directory for execution
-          // If we have an active file, use its directory so relative paths (like fopen("data.txt")) work.
           let runCwd = tempDir;
           if (activeRelativePath) {
             runCwd = path.join(tempDir, path.dirname(activeRelativePath));
           }
 
-          execFile(
-            outputExe,
-            [],
-            { cwd: runCwd },
-            (runError, runStdout, runStderr) => {
-              // Clean up temp files (optional)
-              try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
-
-              resolve({
-                success: true,
-                output: runStdout + (runStderr ? "\n" + runStderr : ""),
-                error: runError ? runError.message : undefined
-              });
-            }
-          );
+          resolve({
+            success: true,
+            exePath: outputExe,
+            cwd: runCwd
+          });
         }
       );
     } catch (e) {
       const error = e as Error;
-      resolve({ success: false, output: "", error: error.message });
+      resolve({ success: false, error: error.message });
     }
   });
+};
+
+export const runBinary = (
+  exePath: string,
+  cwd: string,
+  onData: (data: string) => void,
+  onExit: (code: number | null) => void
+): ChildProcess => {
+  const child = spawn(exePath, [], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+
+  child.stdout.on("data", (data) => {
+    onData(data.toString());
+  });
+
+  child.stderr.on("data", (data) => {
+    onData(data.toString());
+  });
+
+  child.on("close", (code) => {
+    onExit(code);
+    // Cleanup is tricky here because we might want to keep the temp dir for debugging
+    // or clean it up later. For now, we rely on OS temp cleanup or manual cleanup if needed.
+    // Ideally, we should pass the tempDir to runBinary and clean it up here.
+    // But since we split compile/run, the tempDir is created in compile.
+    // We can extract the tempDir from exePath or cwd if we really want to clean up.
+    try {
+       // cwd is usually inside tempDir or is tempDir
+       // If cwd is "tempDir/src", we want to remove "tempDir"
+       // But "tempDir" is "c-studio-XXXXXX".
+       // Let's just try to remove the parent of app.exe which is tempDir
+       const tempDir = path.dirname(exePath);
+       if (tempDir.includes("c-studio-")) {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+       }
+    } catch (e) { /* ignore */ }
+  });
+
+  return child;
 };
 
 export const checkSyntax = async (
@@ -223,7 +244,6 @@ export const checkSyntax = async (
         ["-fsyntax-only", ...cFiles],
         { cwd: tempDir, env },
         (error, stdout, stderr) => {
-          // Clean up
           try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
 
           if (!error) {
@@ -231,8 +251,6 @@ export const checkSyntax = async (
             return;
           }
 
-          // Parse stderr for errors
-          // Format: filename:line:col: error: message
           const errors: SyntaxError[] = [];
           const lines = (stderr || "").split("\n");
           
@@ -242,7 +260,7 @@ export const checkSyntax = async (
             const match = line.match(regex);
             if (match) {
               errors.push({
-                file: match[1], // This will be relative path like "main.c"
+                file: match[1],
                 line: parseInt(match[2]),
                 column: parseInt(match[3]),
                 severity: match[4] as "error" | "warning",
