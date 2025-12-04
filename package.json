@@ -1,7 +1,7 @@
 {
   "name": "c-studio",
   "productName": "c-studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -37,6 +37,11 @@
     "vite": "^5.4.21"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "electron-squirrel-startup": "^1.0.1",
+    "lucide-react": "^0.555.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
   }
 }
