@@ -203,13 +203,76 @@ export default function CCodeStudio() {
     setFiles(newFiles);
   };
 
-  const handleGenerateTest = (type: "multi-main" | "nested" | "assets") => {
+  const handleGenerateTest = (type: "multi-main" | "nested" | "assets" | "complex-nested") => {
     const newId = () => Math.random().toString(36).substr(2, 9);
     const rootId = newId();
 
     let newFolder: FileSystemItem;
 
-    if (type === "multi-main") {
+    if (type === "complex-nested") {
+      newFolder = {
+        id: rootId,
+        name: "Test_Complex",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "src",
+            type: "folder",
+            isOpen: true,
+            children: [
+              {
+                id: newId(),
+                name: "moduleA",
+                type: "folder",
+                isOpen: true,
+                children: [
+                  {
+                    id: newId(),
+                    name: "a.h",
+                    type: "file",
+                    content: `#ifndef A_H\n#define A_H\n\nvoid funcA();\n\n#endif`,
+                  },
+                  {
+                    id: newId(),
+                    name: "a.c",
+                    type: "file",
+                    content: `#include <stdio.h>\n#include "a.h"\n#include "../moduleB/b.h"\n\nvoid funcA() {\n    printf("Function A calling B...\\n");\n    funcB();\n}`,
+                  },
+                ],
+              },
+              {
+                id: newId(),
+                name: "moduleB",
+                type: "folder",
+                isOpen: true,
+                children: [
+                  {
+                    id: newId(),
+                    name: "b.h",
+                    type: "file",
+                    content: `#ifndef B_H\n#define B_H\n\nvoid funcB();\n\n#endif`,
+                  },
+                  {
+                    id: newId(),
+                    name: "b.c",
+                    type: "file",
+                    content: `#include <stdio.h>\n#include "b.h"\n\nvoid funcB() {\n    printf("Function B executed!\\n");\n}`,
+                  },
+                ],
+              },
+              {
+                id: newId(),
+                name: "main.c",
+                type: "file",
+                content: `#include <stdio.h>\n#include "moduleA/a.h"\n\nint main() {\n    printf("Main starting...\\n");\n    funcA();\n    return 0;\n}`,
+              },
+            ],
+          },
+        ],
+      };
+    } else if (type === "multi-main") {
       newFolder = {
         id: rootId,
         name: "Test_MultiMain",
