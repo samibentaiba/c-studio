@@ -23,6 +23,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onToggleFolder: (id: string) => void;
   onMoveFile: (sourceId: string, targetId: string | null) => void;
+  onGenerateTest: (type: "multi-main" | "nested" | "assets") => void;
 }
 
 export function Sidebar({
@@ -33,6 +34,7 @@ export function Sidebar({
   onDelete,
   onToggleFolder,
   onMoveFile,
+  onGenerateTest,
 }: SidebarProps) {
   const [creatingState, setCreatingState] = useState<{
     type: "file" | "folder";
@@ -253,6 +255,38 @@ export function Sidebar({
         )}
         {renderTree(files)}
       </ScrollArea>
+      <div className="p-4 border-t border-white/10">
+        <h3 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Test Scenarios</h3>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("multi-main")}
+          >
+            <div className="w-2 h-2 rounded-full bg-blue-500 mr-2" />
+            Multi-Main
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("nested")}
+          >
+            <div className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
+            Nested Project
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("assets")}
+          >
+            <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+            Assets / I/O
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

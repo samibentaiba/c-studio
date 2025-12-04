@@ -38,9 +38,9 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
-  ipcMain.handle("compile-project", async (event, files) => {
+  ipcMain.handle("compile-project", async (event, files, activeFileId) => {
     try {
-      return await compileProject(files);
+      return await compileProject(files, activeFileId);
     } catch (error) {
       const err = error as Error;
       return { success: false, output: "", error: err.message };

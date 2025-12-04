@@ -5,7 +5,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 interface Window {
   electron: {
-    compileProject: (files: unknown) => Promise<{ success: boolean; output: string; error?: string }>;
+    compileProject: (files: unknown, activeFileId?: string) => Promise<{ success: boolean; output: string; error?: string }>;
     checkSyntax: (files: unknown) => Promise<{ file: string; line: number; column: number; message: string; severity: "error" | "warning" }[]>;
   };
 }

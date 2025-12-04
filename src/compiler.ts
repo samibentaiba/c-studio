@@ -64,7 +64,8 @@ const writeFilesRecursively = (items: FileSystemItem[], currentPath: string, cFi
 };
 
 export const compileProject = async (
-  items: FileSystemItem[]
+  items: FileSystemItem[],
+  activeFileId?: string
 ): Promise<CompileResult> => {
   return new Promise((resolve) => {
     try {
@@ -92,13 +93,65 @@ export const compileProject = async (
         return;
       }
 
+      // Filter C files:
+      // 1. Always include the active file (if it's a .c file)
+      // 2. Include other .c files ONLY IF they don't have a "main" function
+      // This allows multiple "main" files to coexist in the project, but only one is compiled at a time.
+      
+      let filesToCompile = cFiles;
+      let activeRelativePath: string | null = null;
+
+      if (activeFileId) {
+        // Find active file path relative to tempDir
+        // We need to traverse the items to find the name/path of the active file
+        // But cFiles contains relative paths.
+        // Let's re-traverse to find the active file's relative path.
+        
+        const findActivePath = (items: FileSystemItem[], currentPath: string): string | null => {
+          for (const item of items) {
+            const itemPath = path.join(currentPath, item.name);
+            if (item.id === activeFileId) {
+              return path.relative(tempDir, itemPath);
+            }
+            if (item.children) {
+              const found = findActivePath(item.children, itemPath);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        activeRelativePath = findActivePath(items, tempDir);
+
+        if (activeRelativePath && activeRelativePath.endsWith(".c")) {
+          filesToCompile = cFiles.filter(file => {
+            // Always keep the active file
+            if (file === activeRelativePath) return true;
+
+            // For other files, check if they have 'main'
+            const content = fs.readFileSync(path.join(tempDir, file), 'utf-8');
+            // Simple regex to detect main function: int main(...) or void main(...)
+            // We look for "main" followed by optional whitespace and "("
+            // We also check it's not part of another word (boundary \b)
+            const hasMain = /\bmain\s*\(/.test(content);
+            
+            return !hasMain;
+          });
+        }
+      }
+
+      if (filesToCompile.length === 0) {
+         resolve({ success: false, output: "", error: "No suitable source files found to compile." });
+         return;
+      }
+
       // 4. Compile
       // IMPORTANT: We add the bin directory to PATH so gcc can find ld.exe (linker)
       const env = { ...process.env, PATH: `${binDir};${process.env.PATH}` };
 
       execFile(
         gcc,
-        [...cFiles, "-o", "app.exe"],
+        [...filesToCompile, "-o", "app.exe"],
         { cwd: tempDir, env },
         (error, stdout, stderr) => {
           if (error) {
@@ -111,10 +164,17 @@ export const compileProject = async (
           }
 
           // 5. Run the Application
+          // Determine the working directory for execution
+          // If we have an active file, use its directory so relative paths (like fopen("data.txt")) work.
+          let runCwd = tempDir;
+          if (activeRelativePath) {
+            runCwd = path.join(tempDir, path.dirname(activeRelativePath));
+          }
+
           execFile(
             outputExe,
             [],
-            { cwd: tempDir },
+            { cwd: runCwd },
             (runError, runStdout, runStderr) => {
               // Clean up temp files (optional)
               try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }

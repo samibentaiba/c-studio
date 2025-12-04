@@ -203,6 +203,103 @@ export default function CCodeStudio() {
     setFiles(newFiles);
   };
 
+  const handleGenerateTest = (type: "multi-main" | "nested" | "assets") => {
+    const newId = () => Math.random().toString(36).substr(2, 9);
+    const rootId = newId();
+
+    let newFolder: FileSystemItem;
+
+    if (type === "multi-main") {
+      newFolder = {
+        id: rootId,
+        name: "Test_MultiMain",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "app1.c",
+            type: "file",
+            content: `#include <stdio.h>\n\nint main() {\n    printf("Running App 1\\n");\n    return 0;\n}`,
+          },
+          {
+            id: newId(),
+            name: "app2.c",
+            type: "file",
+            content: `#include <stdio.h>\n\nint main() {\n    printf("Running App 2\\n");\n    return 0;\n}`,
+          },
+        ],
+      };
+    } else if (type === "nested") {
+      newFolder = {
+        id: rootId,
+        name: "Test_Nested",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "include",
+            type: "folder",
+            isOpen: true,
+            children: [
+              {
+                id: newId(),
+                name: "math_utils.h",
+                type: "file",
+                content: `#ifndef MATH_UTILS_H\n#define MATH_UTILS_H\n\nint add(int a, int b);\n\n#endif`,
+              },
+            ],
+          },
+          {
+            id: newId(),
+            name: "src",
+            type: "folder",
+            isOpen: true,
+            children: [
+              {
+                id: newId(),
+                name: "math_utils.c",
+                type: "file",
+                content: `#include "../include/math_utils.h"\n\nint add(int a, int b) {\n    return a + b;\n}`,
+              },
+            ],
+          },
+          {
+            id: newId(),
+            name: "main.c",
+            type: "file",
+            content: `#include <stdio.h>\n#include "include/math_utils.h"\n\nint main() {\n    printf("2 + 3 = %d\\n", add(2, 3));\n    return 0;\n}`,
+          },
+        ],
+      };
+    } else {
+      // assets
+      newFolder = {
+        id: rootId,
+        name: "Test_Assets",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "data.txt",
+            type: "file",
+            content: `Hello from text file!`,
+          },
+          {
+            id: newId(),
+            name: "main.c",
+            type: "file",
+            content: `#include <stdio.h>\n\nint main() {\n    FILE *f = fopen("data.txt", "r");\n    if (f) {\n        char buffer[100];\n        fgets(buffer, 100, f);\n        printf("Read: %s\\n", buffer);\n        fclose(f);\n    } else {\n        printf("Failed to open file.\\n");\n    }\n    return 0;\n}`,
+          },
+        ],
+      };
+    }
+
+    setFiles([...files, newFolder]);
+  };
+
   const handleContentChange = (content: string) => {
     if (!activeFileId) return;
     const updateContent = (items: FileSystemItem[]): FileSystemItem[] => {
@@ -237,7 +334,7 @@ export default function CCodeStudio() {
 
     try {
       // Pass the entire tree structure to the backend
-      const result = await window.electron.compileProject(files);
+      const result = await window.electron.compileProject(files, activeFileId);
 
       if (result.success) {
         addLog("success", "Build successful.");
@@ -267,6 +364,7 @@ export default function CCodeStudio() {
           onDelete={handleDelete}
           onToggleFolder={handleToggleFolder}
           onMoveFile={handleMoveFile}
+          onGenerateTest={handleGenerateTest}
         />
       </div>
 
