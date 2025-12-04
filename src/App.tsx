@@ -204,13 +204,236 @@ export default function CCodeStudio() {
     setFiles(newFiles);
   };
 
-  const handleGenerateTest = (type: "multi-main" | "nested" | "assets" | "complex-nested") => {
+  const handleGenerateTest = (type: "multi-main" | "nested" | "assets" | "complex-nested" | "multi-input" | "pointers") => {
     const newId = () => Math.random().toString(36).substr(2, 9);
     const rootId = newId();
 
     let newFolder: FileSystemItem;
 
-    if (type === "complex-nested") {
+    if (type === "multi-input") {
+      // Test scenario for multiple input cases with scanf
+      newFolder = {
+        id: rootId,
+        name: "Test_MultiInput",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "main.c",
+            type: "file",
+            content: `#include <stdio.h>
+
+int main() {
+    // Test 1: Single integer input
+    int age;
+    printf("Enter your age: ");
+    scanf("%d", &age);
+    printf("Your age is: %d\\n\\n", age);
+
+    // Test 2: Multiple integers on same line
+    int a, b, c;
+    printf("Enter three numbers (space separated): ");
+    scanf("%d %d %d", &a, &b, &c);
+    printf("Sum: %d\\n\\n", a + b + c);
+
+    // Test 3: String input
+    char name[50];
+    printf("Enter your name: ");
+    scanf("%s", name);
+    printf("Hello, %s!\\n\\n", name);
+
+    // Test 4: Mixed types
+    char grade;
+    float score;
+    printf("Enter grade letter and score: ");
+    scanf(" %c %f", &grade, &score);
+    printf("Grade: %c, Score: %.2f\\n\\n", grade, score);
+
+    // Test 5: Full line input with fgets
+    char sentence[100];
+    printf("Enter a sentence: ");
+    getchar(); // consume leftover newline
+    fgets(sentence, 100, stdin);
+    printf("You said: %s\\n", sentence);
+
+    return 0;
+}`,
+          },
+        ],
+      };
+    } else if (type === "pointers") {
+      // Test scenario for pointers between functions and libraries
+      newFolder = {
+        id: rootId,
+        name: "Test_Pointers",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "pointer_lib.h",
+            type: "file",
+            content: `#ifndef POINTER_LIB_H
+#define POINTER_LIB_H
+
+// Function to swap two integers using pointers
+void swap(int *a, int *b);
+
+// Function to modify array elements
+void doubleArray(int *arr, int size);
+
+// Function that returns a pointer (allocates memory)
+int* createArray(int size, int initialValue);
+
+// Function to print array using pointer arithmetic
+void printArray(int *arr, int size);
+
+// Function to find max element and return pointer to it
+int* findMax(int *arr, int size);
+
+// Function pointer type for operations
+typedef int (*Operation)(int, int);
+
+// Function that uses function pointer
+int applyOperation(int a, int b, Operation op);
+
+// Sample operations
+int add(int a, int b);
+int multiply(int a, int b);
+
+#endif`,
+          },
+          {
+            id: newId(),
+            name: "pointer_lib.c",
+            type: "file",
+            content: `#include <stdio.h>
+#include <stdlib.h>
+#include "pointer_lib.h"
+
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void doubleArray(int *arr, int size) {
+    for (int i = 0; i < size; i++) {
+        *(arr + i) *= 2;  // Pointer arithmetic
+    }
+}
+
+int* createArray(int size, int initialValue) {
+    int *arr = (int*)malloc(size * sizeof(int));
+    if (arr != NULL) {
+        for (int i = 0; i < size; i++) {
+            arr[i] = initialValue;
+        }
+    }
+    return arr;
+}
+
+void printArray(int *arr, int size) {
+    printf("[");
+    for (int *p = arr; p < arr + size; p++) {
+        printf("%d", *p);
+        if (p < arr + size - 1) printf(", ");
+    }
+    printf("]\\n");
+}
+
+int* findMax(int *arr, int size) {
+    int *maxPtr = arr;
+    for (int i = 1; i < size; i++) {
+        if (*(arr + i) > *maxPtr) {
+            maxPtr = arr + i;
+        }
+    }
+    return maxPtr;
+}
+
+int applyOperation(int a, int b, Operation op) {
+    return op(a, b);
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}`,
+          },
+          {
+            id: newId(),
+            name: "main.c",
+            type: "file",
+            content: `#include <stdio.h>
+#include <stdlib.h>
+#include "pointer_lib.h"
+
+int main() {
+    printf("=== Pointer Test Scenarios ===\\n\\n");
+
+    // Test 1: Swap using pointers
+    printf("Test 1: Swap Function\\n");
+    int x = 10, y = 20;
+    printf("Before swap: x = %d, y = %d\\n", x, y);
+    swap(&x, &y);
+    printf("After swap:  x = %d, y = %d\\n\\n", x, y);
+
+    // Test 2: Modify array through pointer
+    printf("Test 2: Double Array Elements\\n");
+    int numbers[] = {1, 2, 3, 4, 5};
+    int size = sizeof(numbers) / sizeof(numbers[0]);
+    printf("Before: ");
+    printArray(numbers, size);
+    doubleArray(numbers, size);
+    printf("After:  ");
+    printArray(numbers, size);
+    printf("\\n");
+
+    // Test 3: Dynamic memory allocation
+    printf("Test 3: Dynamic Array Creation\\n");
+    int *dynamicArr = createArray(5, 7);
+    if (dynamicArr != NULL) {
+        printf("Created array: ");
+        printArray(dynamicArr, 5);
+        free(dynamicArr);
+    }
+    printf("\\n");
+
+    // Test 4: Find max and return pointer
+    printf("Test 4: Find Max Element\\n");
+    int data[] = {15, 3, 27, 8, 12};
+    int *maxPtr = findMax(data, 5);
+    printf("Array: ");
+    printArray(data, 5);
+    printf("Max value: %d (at address %p)\\n\\n", *maxPtr, (void*)maxPtr);
+
+    // Test 5: Function pointers
+    printf("Test 5: Function Pointers\\n");
+    int a = 5, b = 3;
+    printf("Numbers: %d and %d\\n", a, b);
+    printf("Using add function: %d\\n", applyOperation(a, b, add));
+    printf("Using multiply function: %d\\n\\n", applyOperation(a, b, multiply));
+
+    // Test 6: Pointer to pointer
+    printf("Test 6: Pointer to Pointer\\n");
+    int value = 42;
+    int *ptr = &value;
+    int **pptr = &ptr;
+    printf("Value: %d\\n", value);
+    printf("Via *ptr: %d\\n", *ptr);
+    printf("Via **pptr: %d\\n", **pptr);
+
+    return 0;
+}`,
+          },
+        ],
+      };
+    } else if (type === "complex-nested") {
       newFolder = {
         id: rootId,
         name: "Test_Complex",

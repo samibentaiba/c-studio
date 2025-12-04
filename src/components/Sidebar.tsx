@@ -23,7 +23,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onToggleFolder: (id: string) => void;
   onMoveFile: (sourceId: string, targetId: string | null) => void;
-  onGenerateTest: (type: "multi-main" | "nested" | "assets" | "complex-nested") => void;
+  onGenerateTest: (type: "multi-main" | "nested" | "assets" | "complex-nested" | "multi-input" | "pointers") => void;
 }
 
 export function Sidebar({
@@ -293,6 +293,24 @@ export function Sidebar({
           >
             <div className="w-2 h-2 rounded-full bg-orange-500 mr-2" />
             Complex Nested
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("multi-input")}
+          >
+            <div className="w-2 h-2 rounded-full bg-cyan-500 mr-2" />
+            Multi-Input
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("pointers")}
+          >
+            <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+            Pointers & Libraries
           </Button>
         </div>
       </div>
