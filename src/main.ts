@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { compileProject } from "./compiler";
+import { compileProject, checkSyntax } from "./compiler";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -41,8 +41,17 @@ app.on("ready", () => {
   ipcMain.handle("compile-project", async (event, files) => {
     try {
       return await compileProject(files);
-    } catch (error: any) {
-      return { success: false, output: "", error: error.message };
+    } catch (error) {
+      const err = error as Error;
+      return { success: false, output: "", error: err.message };
+    }
+  });
+
+  ipcMain.handle("syntax-check", async (event, files) => {
+    try {
+      return await checkSyntax(files);
+    } catch (error) {
+      return [];
     }
   });
   createWindow();

@@ -1,59 +1,69 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Play,
-  Trash2,
-  Terminal,
-  AlertCircle,
-  CheckCircle,
-  FileCode,
-  X,
-  Plus,
-  FileText,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Sidebar } from "./components/Sidebar";
+import { MonacoEditor } from "./components/MonacoEditor";
+import { TerminalPanel } from "./components/TerminalPanel";
+import { FileSystemItem, LogMessage, LogType } from "./types";
 
-// --- Types ---
-type LogType = "info" | "success" | "error" | "warning";
-
-interface LogMessage {
-  id: string;
-  type: LogType;
-  content: string;
-  timestamp: string;
-}
-
-interface CodeFile {
-  name: string;
-  content: string;
-}
+// Helper to flatten tree for compiler (temporary until backend supports tree)
+// Actually, we will send the tree to backend, but for now let's keep it simple
+// Helper to flatten tree for compiler (temporary until backend supports tree)
+// Actually, we will send the tree to backend, but for now let's keep it simple
+// const flattenFiles = (items: FileSystemItem[]): { name: string; content: string }[] => {
+//   let result: { name: string; content: string }[] = [];
+//   items.forEach((item) => {
+//     if (item.type === "file") {
+//       result.push({ name: item.name, content: item.content || "" });
+//     } else if (item.children) {
+//       const children = flattenFiles(item.children);
+//       // Prefix children names with parent name for flat structure simulation if needed
+//       // But for real tree support, we should pass the structure.
+//       // For now, let's just pass the file content.
+//       // TODO: Update compiler to handle folders.
+//       result = [...result, ...children];
+//     }
+//   });
+//   return result;
+// };
 
 export default function CCodeStudio() {
-  const [files, setFiles] = useState<CodeFile[]>([
+  const [files, setFiles] = useState<FileSystemItem[]>([
     {
+      id: "1",
       name: "main.c",
+      type: "file",
       content: `#include <stdio.h>\n#include "utils.h"\n\nint main() {\n    printf("App Running...\\n");\n    print_message();\n    return 0;\n}`,
     },
     {
+      id: "2",
       name: "utils.h",
+      type: "file",
       content: `#ifndef UTILS_H\n#define UTILS_H\n\nvoid print_message();\n\n#endif`,
     },
     {
+      id: "3",
       name: "utils.c",
+      type: "file",
       content: `#include <stdio.h>\n#include "utils.h"\n\nvoid print_message() {\n    printf("Hello from bundled GCC!\\n");\n}`,
     },
   ]);
 
-  const [activeFileName, setActiveFileName] = useState<string>("main.c");
+  const [activeFileId, setActiveFileId] = useState<string | null>("1");
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
-  const [isCreatingFile, setIsCreatingFile] = useState(false);
-  const [newFileName, setNewFileName] = useState("");
 
-  const logsEndRef = useRef<HTMLDivElement>(null);
-  const activeFile = files.find((f) => f.name === activeFileName) || files[0];
+  // Recursive search for active file
+  const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = findFile(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
 
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+  const activeFile = activeFileId ? findFile(files, activeFileId) : null;
 
   const addLog = (type: LogType, content: string) => {
     setLogs((prev) => [
@@ -67,22 +77,158 @@ export default function CCodeStudio() {
     ]);
   };
 
-  const handleCreateFile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFileName || files.some((f) => f.name === newFileName)) return;
-    setFiles([...files, { name: newFileName, content: "// New file" }]);
-    setActiveFileName(newFileName);
-    setNewFileName("");
-    setIsCreatingFile(false);
+  const handleFileCreate = (name: string, type: "file" | "folder", parentId?: string) => {
+    const newItem: FileSystemItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      type,
+      content: type === "file" ? "// New file" : undefined,
+      children: type === "folder" ? [] : undefined,
+      isOpen: true,
+    };
+
+    if (!parentId) {
+      setFiles([...files, newItem]);
+    } else {
+      const updateChildren = (items: FileSystemItem[]): FileSystemItem[] => {
+        return items.map((item) => {
+          if (item.id === parentId) {
+            return { ...item, children: [...(item.children || []), newItem], isOpen: true };
+          }
+          if (item.children) {
+            return { ...item, children: updateChildren(item.children) };
+          }
+          return item;
+        });
+      };
+      setFiles(updateChildren(files));
+    }
+    
+    if (type === "file") {
+      setActiveFileId(newItem.id);
+    }
   };
 
-  const handleDeleteFile = (fileName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (files.length === 1) return;
-    const newFiles = files.filter((f) => f.name !== fileName);
-    setFiles(newFiles);
-    if (activeFileName === fileName) setActiveFileName(newFiles[0].name);
+  const handleDelete = (id: string) => {
+    const deleteFromTree = (items: FileSystemItem[]): FileSystemItem[] => {
+      return items.filter((item) => item.id !== id).map((item) => ({
+        ...item,
+        children: item.children ? deleteFromTree(item.children) : undefined,
+      }));
+    };
+    setFiles(deleteFromTree(files));
+    if (activeFileId === id) setActiveFileId(null);
   };
+
+  const handleToggleFolder = (id: string) => {
+    const toggle = (items: FileSystemItem[]): FileSystemItem[] => {
+      return items.map((item) => {
+        if (item.id === id) {
+          return { ...item, isOpen: !item.isOpen };
+        }
+        if (item.children) {
+          return { ...item, children: toggle(item.children) };
+        }
+        return item;
+      });
+    };
+    setFiles(toggle(files));
+  };
+
+  const handleMoveFile = (sourceId: string, targetId: string | null) => {
+    if (sourceId === targetId) return;
+
+    // Helper to find item
+    const findItem = (items: FileSystemItem[], id: string): FileSystemItem | null => {
+      for (const item of items) {
+        if (item.id === id) return item;
+        if (item.children) {
+          const found = findItem(item.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const sourceItem = findItem(files, sourceId);
+    if (!sourceItem) return;
+
+    // Check if target is a descendant of source (prevent circular move)
+    if (targetId) {
+      const isDescendant = (parent: FileSystemItem, target: string): boolean => {
+        if (!parent.children) return false;
+        for (const child of parent.children) {
+          if (child.id === target) return true;
+          if (isDescendant(child, target)) return true;
+        }
+        return false;
+      };
+      if (isDescendant(sourceItem, targetId)) return;
+    }
+
+    // Remove from old location
+    const removeFromTree = (items: FileSystemItem[]): FileSystemItem[] => {
+      return items
+        .filter((item) => item.id !== sourceId)
+        .map((item) => ({
+          ...item,
+          children: item.children ? removeFromTree(item.children) : undefined,
+        }));
+    };
+
+    let newFiles = removeFromTree(files);
+
+    // Add to new location
+    if (!targetId) {
+      newFiles = [...newFiles, sourceItem];
+    } else {
+      const addToTree = (items: FileSystemItem[]): FileSystemItem[] => {
+        return items.map((item) => {
+          if (item.id === targetId) {
+            return {
+              ...item,
+              children: [...(item.children || []), sourceItem],
+              isOpen: true,
+            };
+          }
+          if (item.children) {
+            return { ...item, children: addToTree(item.children) };
+          }
+          return item;
+        });
+      };
+      newFiles = addToTree(newFiles);
+    }
+
+    setFiles(newFiles);
+  };
+
+  const handleContentChange = (content: string) => {
+    if (!activeFileId) return;
+    const updateContent = (items: FileSystemItem[]): FileSystemItem[] => {
+      return items.map((item) => {
+        if (item.id === activeFileId) {
+          return { ...item, content };
+        }
+        if (item.children) {
+          return { ...item, children: updateContent(item.children) };
+        }
+        return item;
+      });
+    };
+    setFiles(updateContent(files));
+  };
+
+  const [markers, setMarkers] = useState<{ file: string; line: number; column: number; message: string; severity: "error" | "warning" }[]>([]);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const errors = await window.electron.checkSyntax(files);
+      setMarkers(errors);
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [files]);
 
   const handleRun = async () => {
     if (isCompiling) return;
@@ -90,7 +236,7 @@ export default function CCodeStudio() {
     addLog("info", "Compiling...");
 
     try {
-      // @ts-ignore - Electron IPC bridge
+      // Pass the entire tree structure to the backend
       const result = await window.electron.compileProject(files);
 
       if (result.success) {
@@ -111,143 +257,37 @@ export default function CCodeStudio() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-900 text-slate-100 font-sans overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
-        <div className="p-4 border-b border-slate-800">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            C-Studio
-          </h1>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="text-xs font-semibold text-slate-500 uppercase">
-              Files
-            </div>
-            <button
-              onClick={() => setIsCreatingFile(true)}
-              className="text-slate-500 hover:text-white"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          {isCreatingFile && (
-            <form onSubmit={handleCreateFile} className="px-2 mb-2">
-              <input
-                autoFocus
-                type="text"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onBlur={() => setIsCreatingFile(false)}
-                className="w-full bg-slate-800 text-sm px-2 py-1 rounded border border-blue-500 focus:outline-none"
-              />
-            </form>
-          )}
-          <div className="px-2 flex flex-col gap-1">
-            {files.map((file) => (
-              <div
-                key={file.name}
-                onClick={() => setActiveFileName(file.name)}
-                className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer group ${activeFileName === file.name ? "bg-slate-800 text-blue-400" : "text-slate-400 hover:bg-slate-800/50"}`}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  {file.name.endsWith(".h") ? (
-                    <FileText size={16} className="text-yellow-500" />
-                  ) : (
-                    <FileCode size={16} />
-                  )}
-                  <span className="text-sm truncate">{file.name}</span>
-                </div>
-                {files.length > 1 && (
-                  <button
-                    onClick={(e) => handleDeleteFile(file.name, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="flex h-screen w-full bg-background text-foreground font-sans overflow-hidden">
+      <div className="w-64 flex-shrink-0">
+        <Sidebar
+          files={files}
+          activeFileId={activeFileId}
+          onFileSelect={(file) => setActiveFileId(file.id)}
+          onFileCreate={handleFileCreate}
+          onDelete={handleDelete}
+          onToggleFolder={handleToggleFolder}
+          onMoveFile={handleMoveFile}
+        />
       </div>
 
-      {/* Main Editor */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="h-14 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-4">
-          <span className="text-slate-100 font-medium">{activeFile.name}</span>
-          <button
-            onClick={handleRun}
-            disabled={isCompiling}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-md font-medium ${isCompiling ? "bg-slate-700" : "bg-green-600 hover:bg-green-700"}`}
-          >
-            {isCompiling ? (
-              "Running..."
-            ) : (
-              <>
-                <Play size={16} fill="currentColor" /> Run Code
-              </>
-            )}
-          </button>
+        <div className="flex-1 flex flex-col min-h-0">
+          {activeFile ? (
+            <MonacoEditor
+              activeFile={activeFile}
+              onContentChange={handleContentChange}
+              onRun={handleRun}
+              isCompiling={isCompiling}
+              markers={markers}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              Select a file to edit
+            </div>
+          )}
         </div>
-
-        <div className="flex-1 relative bg-[#1e1e1e] flex">
-          <div className="w-12 border-r border-slate-800 flex flex-col items-end pt-4 pr-3 text-slate-600 font-mono text-sm leading-6">
-            {activeFile.content.split("\n").map((_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
-          </div>
-          <textarea
-            value={activeFile.content}
-            onChange={(e) =>
-              setFiles(
-                files.map((f) =>
-                  f.name === activeFileName
-                    ? { ...f, content: e.target.value }
-                    : f
-                )
-              )
-            }
-            className="flex-1 h-full pl-2 pt-4 pr-4 bg-transparent text-slate-200 font-mono text-sm leading-6 resize-none focus:outline-none"
-            spellCheck={false}
-          />
-        </div>
-
-        <div className="h-1/3 bg-slate-950 border-t border-slate-800 flex flex-col">
-          <div className="h-10 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/50">
-            <span className="text-sm font-medium text-slate-200 flex gap-2">
-              <Terminal size={16} /> Output
-            </span>
-            <button onClick={() => setLogs([])}>
-              <Trash2
-                size={16}
-                className="text-slate-500 hover:text-slate-300"
-              />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 font-mono text-sm">
-            {logs.map((log) => (
-              <div key={log.id} className="flex gap-3 text-slate-300 mb-1">
-                <span className="text-slate-600 text-xs pt-1">
-                  {log.timestamp}
-                </span>
-                <span
-                  className={
-                    log.type === "error"
-                      ? "text-red-400"
-                      : log.type === "success"
-                        ? "text-green-400"
-                        : ""
-                  }
-                >
-                  {log.content}
-                </span>
-              </div>
-            ))}
-            <div ref={logsEndRef} />
-          </div>
+        <div className="h-1/3 flex-shrink-0">
+          <TerminalPanel logs={logs} onClear={() => setLogs([])} />
         </div>
       </div>
     </div>

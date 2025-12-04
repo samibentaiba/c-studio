@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electron", {
-  compileProject: (files: any) => ipcRenderer.invoke("compile-project", files),
+  compileProject: (files: unknown) => ipcRenderer.invoke("compile-project", files),
+  checkSyntax: (files: unknown) => ipcRenderer.invoke("syntax-check", files),
 });

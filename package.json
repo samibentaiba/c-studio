@@ -27,21 +27,34 @@
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/plugin-vite": "^7.10.2",
     "@electron/fuses": "^1.8.0",
+    "@types/autoprefixer": "^9.7.2",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "autoprefixer": "^10.4.22",
     "electron": "39.2.5",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
-    "typescript": "~4.5.4",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3",
     "vite": "^5.4.21"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@wasm-fmt/clang-format": "^21.1.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "lucide-react": "^0.555.0",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "tailwind-merge": "^3.4.0"
   }
 }

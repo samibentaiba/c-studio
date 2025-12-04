@@ -20,9 +20,12 @@ export const getGccPath = () => {
   };
 };
 
-interface CodeFile {
+export interface FileSystemItem {
+  id: string;
   name: string;
-  content: string;
+  type: "file" | "folder";
+  content?: string;
+  children?: FileSystemItem[];
 }
 
 interface CompileResult {
@@ -31,8 +34,37 @@ interface CompileResult {
   error?: string;
 }
 
+interface SyntaxError {
+  file: string;
+  line: number;
+  column: number;
+  message: string;
+  severity: "error" | "warning";
+}
+
+// Helper to write files recursively
+const writeFilesRecursively = (items: FileSystemItem[], currentPath: string, cFiles: string[], tempDir: string) => {
+  items.forEach((item) => {
+    const itemPath = path.join(currentPath, item.name);
+    
+    if (item.type === "folder") {
+      if (!fs.existsSync(itemPath)) fs.mkdirSync(itemPath);
+      if (item.children) {
+        writeFilesRecursively(item.children, itemPath, cFiles, tempDir);
+      }
+    } else {
+      // Write file content
+      fs.writeFileSync(itemPath, item.content || "");
+      if (item.name.endsWith(".c")) {
+        // Store relative path for gcc
+        cFiles.push(path.relative(tempDir, itemPath));
+      }
+    }
+  });
+};
+
 export const compileProject = async (
-  files: CodeFile[]
+  items: FileSystemItem[]
 ): Promise<CompileResult> => {
   return new Promise((resolve) => {
     try {
@@ -51,12 +83,9 @@ export const compileProject = async (
         return;
       }
 
-      // 3. Write Source Files
+      // 3. Write Source Files Recursively
       const cFiles: string[] = [];
-      files.forEach((file) => {
-        fs.writeFileSync(path.join(tempDir, file.name), file.content);
-        if (file.name.endsWith(".c")) cFiles.push(file.name);
-      });
+      writeFilesRecursively(items, tempDir, cFiles, tempDir);
 
       if (cFiles.length === 0) {
         resolve({ success: false, output: "", error: "No .c files found to compile." });
@@ -88,7 +117,7 @@ export const compileProject = async (
             { cwd: tempDir },
             (runError, runStdout, runStderr) => {
               // Clean up temp files (optional)
-              try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) {}
+              try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
 
               resolve({
                 success: true,
@@ -99,8 +128,74 @@ export const compileProject = async (
           );
         }
       );
-    } catch (e: any) {
-      resolve({ success: false, output: "", error: e.message });
+    } catch (e) {
+      const error = e as Error;
+      resolve({ success: false, output: "", error: error.message });
+    }
+  });
+};
+
+export const checkSyntax = async (
+  items: FileSystemItem[]
+): Promise<SyntaxError[]> => {
+  return new Promise((resolve) => {
+    try {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "c-studio-syntax-"));
+      const { gcc, binDir } = getGccPath();
+
+      if (!fs.existsSync(gcc)) {
+        resolve([]);
+        return;
+      }
+
+      const cFiles: string[] = [];
+      writeFilesRecursively(items, tempDir, cFiles, tempDir);
+
+      if (cFiles.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      const env = { ...process.env, PATH: `${binDir};${process.env.PATH}` };
+
+      execFile(
+        gcc,
+        ["-fsyntax-only", ...cFiles],
+        { cwd: tempDir, env },
+        (error, stdout, stderr) => {
+          // Clean up
+          try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+
+          if (!error) {
+            resolve([]);
+            return;
+          }
+
+          // Parse stderr for errors
+          // Format: filename:line:col: error: message
+          const errors: SyntaxError[] = [];
+          const lines = (stderr || "").split("\n");
+          
+          const regex = /^(.*?):(\d+):(\d+):\s+(error|warning):\s+(.*)$/;
+
+          lines.forEach(line => {
+            const match = line.match(regex);
+            if (match) {
+              errors.push({
+                file: match[1], // This will be relative path like "main.c"
+                line: parseInt(match[2]),
+                column: parseInt(match[3]),
+                severity: match[4] as "error" | "warning",
+                message: match[5]
+              });
+            }
+          });
+
+          resolve(errors);
+        }
+      );
+    } catch (e) {
+      resolve([]);
     }
   });
 };
