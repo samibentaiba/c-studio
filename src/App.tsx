@@ -657,9 +657,172 @@ int main() {
     addLog("info", input + "\n"); // Echo input to terminal
   };
 
+  // ===== File System Handlers =====
+
+  const handleNewFile = () => {
+    handleFileCreate("untitled.c", "file");
+  };
+
+  const handleOpenFile = async () => {
+    const result = await window.electron.showOpenDialog({
+      title: "Open File",
+      filters: [
+        { name: "C Files", extensions: ["c", "h"] },
+        { name: "Text Files", extensions: ["txt"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+      properties: ["openFile"],
+    });
+
+    if (result.canceled || !result.filePaths.length) return;
+
+    const filePath = result.filePaths[0];
+    const fileResult = await window.electron.readFile(filePath);
+
+    if (fileResult.success) {
+      const fileName = filePath.split(/[\\/]/).pop() || "file";
+      const newFile: FileSystemItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: fileName,
+        type: "file",
+        content: fileResult.content,
+      };
+      setFiles([...files, newFile]);
+      setActiveFileId(newFile.id);
+      addLog("success", `Opened: ${fileName}`);
+    } else {
+      addLog("error", `Failed to open file: ${fileResult.error}`);
+    }
+  };
+
+  const handleOpenFolder = async () => {
+    const result = await window.electron.showOpenDialog({
+      title: "Open Folder",
+      properties: ["openDirectory"],
+    });
+
+    if (result.canceled || !result.filePaths.length) return;
+
+    const folderPath = result.filePaths[0];
+    const folderResult = await window.electron.readFolder(folderPath);
+
+    if (folderResult.success) {
+      // Convert folder result to FileSystemItem format
+      const convertToFileSystemItem = (items: { name: string; type: "file" | "folder"; content?: string; children?: unknown[] }[]): FileSystemItem[] => {
+        return items.map((item) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          name: item.name,
+          type: item.type,
+          content: item.content,
+          children: item.children ? convertToFileSystemItem(item.children as { name: string; type: "file" | "folder"; content?: string; children?: unknown[] }[]) : undefined,
+          isOpen: true,
+        }));
+      };
+
+      const newFolder: FileSystemItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: folderResult.folderName,
+        type: "folder",
+        children: convertToFileSystemItem(folderResult.files),
+        isOpen: true,
+      };
+
+      setFiles([...files, newFolder]);
+      addLog("success", `Opened folder: ${folderResult.folderName}`);
+    } else {
+      addLog("error", `Failed to open folder: ${folderResult.error}`);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!activeFile || activeFile.type !== "file") {
+      addLog("warning", "No file selected to save");
+      return;
+    }
+
+    const result = await window.electron.showSaveDialog({
+      title: "Save File",
+      defaultPath: activeFile.name,
+      filters: [
+        { name: "C Files", extensions: ["c", "h"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    });
+
+    if (result.canceled || !result.filePath) return;
+
+    const saveResult = await window.electron.saveFile(result.filePath, activeFile.content || "");
+
+    if (saveResult.success) {
+      addLog("success", `Saved: ${result.filePath}`);
+    } else {
+      addLog("error", `Failed to save: ${saveResult.error}`);
+    }
+  };
+
+  const handleExportWorkspace = async () => {
+    const result = await window.electron.showSaveDialog({
+      title: "Export Workspace",
+      defaultPath: "project.cstudio",
+      filters: [{ name: "C-Studio Workspace", extensions: ["cstudio"] }],
+    });
+
+    if (result.canceled || !result.filePath) return;
+
+    const workspace = {
+      version: "1.3.0",
+      name: "C-Studio Project",
+      files: files,
+    };
+
+    const saveResult = await window.electron.saveFile(result.filePath, JSON.stringify(workspace, null, 2));
+
+    if (saveResult.success) {
+      addLog("success", `Workspace exported to: ${result.filePath}`);
+    } else {
+      addLog("error", `Failed to export: ${saveResult.error}`);
+    }
+  };
+
+  const handleImportWorkspace = async () => {
+    const result = await window.electron.showOpenDialog({
+      title: "Import Workspace",
+      filters: [{ name: "C-Studio Workspace", extensions: ["cstudio"] }],
+      properties: ["openFile"],
+    });
+
+    if (result.canceled || !result.filePaths.length) return;
+
+    const fileResult = await window.electron.readFile(result.filePaths[0]);
+
+    if (fileResult.success) {
+      try {
+        const workspace = JSON.parse(fileResult.content);
+        if (workspace.files && Array.isArray(workspace.files)) {
+          setFiles(workspace.files);
+          setActiveFileId(null);
+          addLog("success", `Workspace imported: ${workspace.name || "Unnamed"}`);
+        } else {
+          addLog("error", "Invalid workspace file format");
+        }
+      } catch {
+        addLog("error", "Failed to parse workspace file");
+      }
+    } else {
+      addLog("error", `Failed to import: ${fileResult.error}`);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-background text-foreground font-sans overflow-hidden">
-      <TitleBar />
+      <TitleBar
+        onNewFile={handleNewFile}
+        onOpenFile={handleOpenFile}
+        onOpenFolder={handleOpenFolder}
+        onSaveFile={handleSave}
+        onExportWorkspace={handleExportWorkspace}
+        onImportWorkspace={handleImportWorkspace}
+      />
       <div className="flex-1 flex overflow-hidden">
         <div className="w-64 flex-shrink-0">
           <Sidebar

@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "node:path";
+import fs from "node:fs";
 import started from "electron-squirrel-startup";
 import { compileProject, checkSyntax, runBinary } from "./compiler";
 import { ChildProcess } from "child_process";
@@ -94,6 +95,100 @@ app.on("ready", () => {
       return [];
     }
   });
+
+  // ===== File System IPC Handlers =====
+
+  // Show save dialog
+  ipcMain.handle("show-save-dialog", async (event, options: {
+    title?: string;
+    defaultPath?: string;
+    filters?: { name: string; extensions: string[] }[];
+  }) => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: options.title || "Save File",
+      defaultPath: options.defaultPath,
+      filters: options.filters || [{ name: "All Files", extensions: ["*"] }],
+    });
+    return result;
+  });
+
+  // Show open dialog
+  ipcMain.handle("show-open-dialog", async (event, options: {
+    title?: string;
+    filters?: { name: string; extensions: string[] }[];
+    properties?: ("openFile" | "openDirectory" | "multiSelections")[];
+  }) => {
+    if (!mainWindow) return { canceled: true };
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: options.title || "Open",
+      filters: options.filters || [{ name: "All Files", extensions: ["*"] }],
+      properties: options.properties || ["openFile"],
+    });
+    return result;
+  });
+
+  // Save file to disk
+  ipcMain.handle("save-file", async (event, filePath: string, content: string) => {
+    try {
+      fs.writeFileSync(filePath, content, "utf-8");
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
+  // Read file from disk
+  ipcMain.handle("read-file", async (event, filePath: string) => {
+    try {
+      const content = fs.readFileSync(filePath, "utf-8");
+      return { success: true, content };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
+  // Read folder recursively
+  ipcMain.handle("read-folder", async (event, folderPath: string) => {
+    try {
+      const readDirRecursive = (dir: string): { name: string; type: "file" | "folder"; content?: string; children?: unknown[] }[] => {
+        const items = fs.readdirSync(dir, { withFileTypes: true });
+        return items.map((item) => {
+          const fullPath = path.join(dir, item.name);
+          if (item.isDirectory()) {
+            return {
+              name: item.name,
+              type: "folder" as const,
+              children: readDirRecursive(fullPath),
+            };
+          } else {
+            // Only read text files
+            const ext = path.extname(item.name).toLowerCase();
+            const textExts = [".c", ".h", ".txt", ".md", ".json", ".js", ".ts", ".css", ".html"];
+            let content = "";
+            if (textExts.includes(ext) || ext === "") {
+              try {
+                content = fs.readFileSync(fullPath, "utf-8");
+              } catch {
+                content = "";
+              }
+            }
+            return {
+              name: item.name,
+              type: "file" as const,
+              content,
+            };
+          }
+        });
+      };
+
+      const files = readDirRecursive(folderPath);
+      return { success: true, files, folderName: path.basename(folderPath) };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
   createWindow();
 });
 
