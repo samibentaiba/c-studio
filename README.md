@@ -1,71 +1,122 @@
 # C-Studio 🚀
 
-**The Maintenance-First, Zero-Setup C IDE for Windows.**
+**The Zero-Setup C IDE for Windows - Perfect for Beginners!**
 
-C-Studio is a modern, lightweight IDE designed specifically for beginners and students learning C. It eliminates the headache of installing compilers and configuring paths by bundling a portable MinGW toolchain directly into the application.
+C-Studio is a modern, lightweight IDE designed for beginners and students learning C. It eliminates the headache of installing compilers and configuring paths by bundling a portable MinGW toolchain directly into the application.
 
-![C-Studio Screenshot](https://via.placeholder.com/800x450?text=C-Studio+Screenshot)
+![C-Studio Screenshot](./public/readme.png)
 
 ## ✨ Features
 
-- **Zero Setup**: Download, install, and run. No need to install MinGW or GCC separately.
-- **Bundled Compiler**: Comes with a pre-configured MinGW-w64 toolchain.
-- **Modern UI**: Built with React and Tailwind CSS for a clean, dark-themed coding experience.
-- **Instant Run**: Compile and execute your C code with a single click.
-- **File Management**: Create, edit, and delete multiple `.c` and `.h` files.
+- **Zero Setup** - No need to install MinGW or GCC separately
+- **Bundled Compiler** - Pre-configured MinGW-w64 toolchain included
+- **Modern UI** - Clean, dark-themed coding experience
+- **Instant Run** - Compile and execute with a single click
+- **Interactive Terminal** - Full `scanf` and input support
 
-## 🚀 Getting Started
+---
 
-### Installation
+## 📥 Installation (Users)
 
-1.  Go to the [Releases](https://github.com/yourusername/c-studio/releases) page.
-2.  Download the latest `Setup.exe` or ZIP file.
-3.  Run the installer.
-4.  **Windows Defender Setup** (Required once):
-    - Right-click `setup-windows-defender.bat` and select **"Run as administrator"**
-    - This allows Windows to trust the bundled compiler
-5.  Start coding!
+### Step 1: Download
+Go to the [Releases](https://github.com/samibentaiba/c-studio/releases) page and download the latest **ZIP file**.
 
-### Development
+### Step 2: Extract
+Extract the ZIP to a folder, for example:
+```
+C:\C-Studio\
+```
+
+### Step 3: Install Shortcuts
+1. Open the `resources` folder
+2. **Double-click** `install.bat`
+3. This creates:
+   - ✅ Desktop shortcut
+   - ✅ Start Menu entry (searchable in Windows)
+
+### Step 4: Allow Windows Defender (Required Once)
+1. In the `resources` folder, find `setup-windows-defender.bat`
+2. **Right-click** → **"Run as administrator"**
+3. Click "Yes" when prompted
+4. Wait for "SUCCESS" message
+
+### Step 5: Start Coding! 🎉
+- Search **"C-Studio"** in Windows Start Menu, or
+- Double-click the Desktop shortcut
+
+---
+
+## �️ Uninstall
+
+To remove C-Studio:
+
+1. Go to the `resources` folder
+2. Double-click `uninstall.bat`
+3. Delete the C-Studio folder
+
+---
+
+## �📁 Package Contents
+
+```
+c-studio-win32-x64/
+├── c-studio.exe                    ← Main application
+├── resources/
+│   ├── install.bat                 ← Creates shortcuts
+│   ├── uninstall.bat               ← Removes shortcuts
+│   ├── setup-windows-defender.bat  ← Windows Defender fix
+│   └── mingw64/                    ← Bundled GCC compiler
+└── ... (other files)
+```
+
+
+---
+
+## 🔧 Development
 
 If you want to contribute or build from source:
 
-1.  **Clone the repository**:
+### Prerequisites
+- Node.js 18+
+- Bun or npm
 
-    ```bash
-    git clone https://github.com/yourusername/c-studio.git
-    cd c-studio
-    ```
+### Setup
 
-2.  **Install dependencies**:
+```bash
+# Clone the repository
+git clone https://github.com/samibentaiba/c-studio.git
+cd c-studio
 
-    ```bash
-    npm install
-    ```
+# Install dependencies
+bun install  # or: npm install
 
-3.  **Setup Compiler (Windows)**:
-    - Download a portable MinGW-w64 distribution.
-    - Extract it to `resources/mingw64` so that `resources/mingw64/bin/gcc.exe` exists.
+# Download MinGW-w64 and extract to resources/mingw64
+# Ensure resources/mingw64/bin/gcc.exe exists
 
-4.  **Start the app**:
+# Start development
+bun run start  # or: npm start
 
-    ```bash
-    npm start
-    ```
+# Build for production
+bun run make  # or: npm run make
+```
 
-5.  **Build for Production**:
-    ```bash
-    npm run make
-    ```
+### Build Output
+After running `bun run make`, the distributable files are in:
+- `out/make/zip/win32/x64/` - ZIP package
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Electron**: Cross-platform desktop framework.
-- **React**: UI library.
-- **TypeScript**: Type-safe development.
-- **Vite**: Fast build tool.
-- **Electron Forge**: Packaging and distribution.
+- **Electron** - Desktop framework
+- **React** - UI library
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool
+- **Monaco Editor** - VS Code's editor
+- **Electron Forge** - Packaging
+
+---
 
 ## 📄 License
 
-MIT
+MIT © Sami Bentaiba
