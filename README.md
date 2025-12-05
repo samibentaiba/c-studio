@@ -19,9 +19,12 @@ C-Studio is a modern, lightweight IDE designed specifically for beginners and st
 ### Installation
 
 1.  Go to the [Releases](https://github.com/yourusername/c-studio/releases) page.
-2.  Download the latest `Setup.exe`.
+2.  Download the latest `Setup.exe` or ZIP file.
 3.  Run the installer.
-4.  Start coding!
+4.  **Windows Defender Setup** (Required once):
+    - Right-click `setup-windows-defender.bat` and select **"Run as administrator"**
+    - This allows Windows to trust the bundled compiler
+5.  Start coding!
 
 ### Development
 
