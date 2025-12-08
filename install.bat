@@ -7,16 +7,14 @@ echo    C-Studio - Installation Setup
 echo ============================================
 echo.
 
-:: Get the directory where the script is located (resources folder)
+:: Get the directory where the script is located (root folder)
 set "SCRIPT_DIR=%~dp0"
-:: Go up one level to find c-studio.exe (parent folder)
-set "INSTALL_DIR=%SCRIPT_DIR%.."
-:: Get absolute path
-pushd "%INSTALL_DIR%"
-set "INSTALL_DIR=%CD%"
-popd
+:: Remove trailing backslash if present
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "INSTALL_DIR=%SCRIPT_DIR%"
 
-set "EXE_PATH=%INSTALL_DIR%\c-studio.exe"
+:: The actual exe is in the runtime subfolder
+set "EXE_PATH=%INSTALL_DIR%\runtime\c-studio.exe"
 
 :: Check if c-studio.exe exists
 if not exist "%EXE_PATH%" (
@@ -25,7 +23,7 @@ if not exist "%EXE_PATH%" (
     echo Expected location: %EXE_PATH%
     echo.
     echo Make sure you extracted the full ZIP file and
-    echo run this script from the 'resources' folder.
+    echo run this script from the c-studio root folder.
     echo.
     pause
     exit /b 1
@@ -36,9 +34,9 @@ echo.
 echo Installing C-Studio...
 echo.
 
-:: Create Desktop Shortcut
+:: Create Desktop Shortcut (pointing to the actual runtime exe)
 echo Creating Desktop shortcut...
-powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\C-Studio.lnk'); $Shortcut.TargetPath = '%EXE_PATH%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'C-Studio IDE - Zero-setup C programming'; $Shortcut.Save()"
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\C-Studio.lnk'); $Shortcut.TargetPath = '%EXE_PATH%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%\runtime'; $Shortcut.Description = 'C-Studio IDE - Zero-setup C programming'; $Shortcut.Save()"
 if %errorlevel% equ 0 (
     echo   [OK] Desktop shortcut created
 ) else (
@@ -48,7 +46,7 @@ if %errorlevel% equ 0 (
 :: Create Start Menu Shortcut
 echo Creating Start Menu entry...
 set "START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
-powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%START_MENU%\C-Studio.lnk'); $Shortcut.TargetPath = '%EXE_PATH%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'C-Studio IDE - Zero-setup C programming'; $Shortcut.Save()"
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%START_MENU%\C-Studio.lnk'); $Shortcut.TargetPath = '%EXE_PATH%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%\runtime'; $Shortcut.Description = 'C-Studio IDE - Zero-setup C programming'; $Shortcut.Save()"
 if %errorlevel% equ 0 (
     echo   [OK] Start Menu entry created
 ) else (
