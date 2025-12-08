@@ -9,6 +9,7 @@
     "package": "electron-forge package",
     "package:clean": "electron-forge package && powershell -ExecutionPolicy Bypass -File ./scripts/post-package.ps1",
     "make": "electron-forge make",
+    "make:clean": "electron-forge make && powershell -ExecutionPolicy Bypass -File ./scripts/post-make.ps1",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
