@@ -9,7 +9,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     // Include MinGW compiler and Windows Defender setup script
-    extraResource: ["./resources/mingw64", "./setup-windows-defender.bat", "./install.bat", "./uninstall.bat"],
+    extraResource: ["./resources/mingw64", "./setup-windows-defender.bat", "./install.bat", "./uninstall.bat", "./public/clang-format.wasm"],
     // Application icon
     icon: "./public/icon",
     // Windows executable name

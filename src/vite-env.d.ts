@@ -54,5 +54,8 @@ interface Window {
     saveFile: (filePath: string, content: string) => Promise<SaveResult>;
     readFile: (filePath: string) => Promise<FileResult>;
     readFolder: (folderPath: string) => Promise<FolderResult>;
+    
+    // WASM path helpers
+    getClangFormatWasmPath: () => Promise<string>;
   };
 }

@@ -96,6 +96,20 @@ app.on("ready", () => {
     }
   });
 
+  // Get the path to the clang-format WASM file
+  ipcMain.handle("get-clang-format-wasm-path", () => {
+    const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+    if (isDev) {
+      // In development, Vite serves from public folder
+      return `${MAIN_WINDOW_VITE_DEV_SERVER_URL}clang-format.wasm`;
+    } else {
+      // In production, it's in the resources folder
+      const wasmPath = path.join(process.resourcesPath, "clang-format.wasm");
+      // Convert to file:// URL for the fetch API
+      return `file://${wasmPath.replace(/\\/g, "/")}`;
+    }
+  });
+
   // ===== File System IPC Handlers =====
 
   // Show save dialog

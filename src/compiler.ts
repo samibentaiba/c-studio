@@ -7,7 +7,6 @@ import os from "os";
 // 1. Locate the Compiler
 export const getGccPath = () => {
   const isDev = !app.isPackaged;
-  
   // In Development: Use the folder in your project root
   // app.getAppPath() points to the 'c-studio' folder
   const basePath = isDev

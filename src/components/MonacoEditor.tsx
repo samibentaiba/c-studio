@@ -63,8 +63,16 @@ export function MonacoEditor({
     if (monacoRef.current) {
       const monaco = monacoRef.current;
       
-      // Initialize WASM
-      init("/clang-format.wasm").catch(console.error);
+      // Initialize WASM with environment-appropriate path from main process
+      const initWasm = async () => {
+        try {
+          const wasmPath = await window.electron.getClangFormatWasmPath();
+          await init(wasmPath);
+        } catch (error) {
+          console.error("Failed to initialize clang-format WASM:", error);
+        }
+      };
+      initWasm();
 
       const dispose = monaco.languages.registerDocumentFormattingEditProvider("c", {
         provideDocumentFormattingEdits: async (model: any) => {

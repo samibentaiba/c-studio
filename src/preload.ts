@@ -26,4 +26,7 @@ contextBridge.exposeInMainWorld("electron", {
   saveFile: (filePath: string, content: string) => ipcRenderer.invoke("save-file", filePath, content),
   readFile: (filePath: string) => ipcRenderer.invoke("read-file", filePath),
   readFolder: (folderPath: string) => ipcRenderer.invoke("read-folder", folderPath),
+  
+  // WASM path helpers
+  getClangFormatWasmPath: () => ipcRenderer.invoke("get-clang-format-wasm-path"),
 });
