@@ -7,11 +7,14 @@ echo    C-Studio - Uninstall
 echo ============================================
 echo.
 
-:: Get the directory where the script is located (root folder)
+:: Get the directory where the script is located (resources folder)
 set "SCRIPT_DIR=%~dp0"
-:: Remove trailing backslash if present
-if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-set "INSTALL_DIR=%SCRIPT_DIR%"
+:: Go up one level to find c-studio.exe (parent folder)
+set "INSTALL_DIR=%SCRIPT_DIR%.."
+:: Get absolute path
+pushd "%INSTALL_DIR%"
+set "INSTALL_DIR=%CD%"
+popd
 
 echo Removing C-Studio...
 echo.

@@ -8,8 +8,14 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    // Include MinGW compiler and clang-format WASM
-    extraResource: ["./resources/mingw64", "./public/clang-format.wasm"],
+    // Include MinGW compiler, clang-format WASM, and helper scripts
+    extraResource: [
+      "./resources/mingw64",
+      "./public/clang-format.wasm",
+      "./install.bat",
+      "./uninstall.bat",
+      "./setup-windows-defender.bat"
+    ],
     // Application icon
     icon: "./public/icon",
     // Windows executable name
