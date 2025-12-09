@@ -48,9 +48,9 @@ Source: "..\installer\extract-app.ps1"; DestDir: "{tmp}"; Flags: deleteafterinst
 Source: "..\installer\extract-mingw.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Run]
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{tmp}\extract-app.ps1"" -ZipPath ""{tmp}\c-studio-app.zip"" -DestPath ""{app}"""; StatusMsg: "Extracting C-Studio..."; Flags: runhidden waituntilterminated
@@ -60,9 +60,13 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 
 [UninstallRun]
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""Remove-MpPreference -ExclusionPath '{app}'"""; Flags: runhidden; RunOnceId: "RemoveDefenderExclusion"
+; Force remove the entire folder if files remain
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""Remove-Item -Recurse -Force '{app}' -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "RemoveAppFolder"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
+Type: filesandordirs; Name: "{app}\*"
+Type: dirifempty; Name: "{app}"
 
 [Code]
 var
