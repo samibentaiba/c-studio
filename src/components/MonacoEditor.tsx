@@ -155,9 +155,14 @@ export function MonacoEditor({
           options={{
             minimap: { enabled: false },
             fontSize: 14,
-            wordWrap: "on",
+            wordWrap: "off",
             scrollBeyondLastLine: false,
             automaticLayout: true,
+            scrollbar: {
+              horizontal: "visible",
+              horizontalScrollbarSize: 10,
+              verticalScrollbarSize: 10,
+            },
           }}
         />
       </div>

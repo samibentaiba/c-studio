@@ -790,7 +790,7 @@ int main() {
     if (result.canceled || !result.filePath) return;
 
     const workspace = {
-      version: "1.4.0",
+      version: "1.4.1",
       name: "C-Studio Project",
       files: files,
     };

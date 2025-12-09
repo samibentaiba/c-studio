@@ -2,13 +2,13 @@
 ; Built with Inno Setup 6.x
 
 #define MyAppName "C-Studio"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.4.1"
 #define MyAppPublisher "Sami Bentaiba"
 #define MyAppURL "https://github.com/samibentaiba/c-studio"
 #define MyAppExeName "c-studio.exe"
 
 ; Download URLs
-#define AppZipURL "https://github.com/samibentaiba/c-studio/releases/download/v1.4.0/c-studio-win32-x64-1.4.0.zip"
+#define AppZipURL "https://github.com/samibentaiba/c-studio/releases/download/v1.4.1/c-studio-win32-x64-1.4.1.zip"
 #define MinGWZipURL "https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0posix-18.1.5-11.0.1-ucrt-r8/winlibs-x86_64-posix-seh-gcc-13.2.0-llvm-18.1.5-mingw-w64ucrt-11.0.1-r8.zip"
 
 [Setup]

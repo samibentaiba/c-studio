@@ -133,7 +133,7 @@ export function TitleBar({
         <DropdownMenu label="Help" items={helpMenuItems} />
       </div>
       <div className="flex-1 text-center text-xs text-[#999999] font-medium">
-        C-Studio - v1.4.0
+        C-Studio - v1.4.1
       </div>
       <div className="w-24" /> {/* Spacer for window controls */}
     </div>
