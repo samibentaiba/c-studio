@@ -3,6 +3,7 @@ import { Sidebar } from "./components/Sidebar";
 import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
 import { TitleBar } from "./components/TitleBar";
+import { UpdateNotification } from "./components/UpdateNotification";
 import { FileSystemItem, LogMessage, LogType } from "./types";
 
 // Helper to flatten tree for compiler (temporary until backend supports tree)
@@ -51,6 +52,7 @@ export default function CCodeStudio() {
   const [activeFileId, setActiveFileId] = useState<string | null>("1");
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
   // Recursive search for active file
   const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
@@ -629,6 +631,24 @@ int main() {
     };
   }, []);
 
+  // Check for updates on app startup
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const result = await window.electron.checkForUpdates();
+        if (result.hasUpdate) {
+          setUpdateInfo(result);
+        }
+      } catch (error) {
+        console.error("Failed to check for updates:", error);
+      }
+    };
+
+    // Delay update check by 3 seconds to not impact startup performance
+    const timer = setTimeout(checkUpdates, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleRun = async () => {
     if (isCompiling) return;
     setIsCompiling(true);
@@ -858,6 +878,14 @@ int main() {
         </div>
         </div>
       </div>
+
+      {/* Update notification popup */}
+      {updateInfo && (
+        <UpdateNotification
+          updateInfo={updateInfo}
+          onDismiss={() => setUpdateInfo(null)}
+        />
+      )}
     </div>
   );
 }

@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld("electron", {
   
   // WASM path helpers
   getClangFormatWasmPath: () => ipcRenderer.invoke("get-clang-format-wasm-path"),
+  
+  // Auto-update
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
 });

@@ -110,6 +110,59 @@ app.on("ready", () => {
     }
   });
 
+  // ===== Auto-Update Check =====
+  ipcMain.handle("check-for-updates", async () => {
+    try {
+      // Get current version from package.json
+      const currentVersion = app.getVersion();
+      
+      // Fetch latest release from GitHub
+      const response = await fetch(
+        "https://api.github.com/repos/samibentaiba/c-studio/releases/latest",
+        {
+          headers: {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "C-Studio-App"
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        return { hasUpdate: false, error: "Failed to check for updates" };
+      }
+      
+      const release = await response.json();
+      const latestVersion = release.tag_name.replace(/^v/, ""); // Remove 'v' prefix
+      
+      // Compare versions
+      const hasUpdate = isNewerVersion(currentVersion, latestVersion);
+      
+      return {
+        hasUpdate,
+        currentVersion,
+        latestVersion,
+        releaseUrl: release.html_url,
+        downloadUrl: release.assets?.[0]?.browser_download_url || release.html_url,
+        releaseNotes: release.body || "No release notes available.",
+        releaseName: release.name || `v${latestVersion}`
+      };
+    } catch (error) {
+      console.error("Update check failed:", error);
+      return { hasUpdate: false, error: "Failed to check for updates" };
+    }
+  });
+
+  // Helper function to compare semantic versions
+  function isNewerVersion(current: string, latest: string): boolean {
+    const a = current.split(".").map(Number);
+    const b = latest.split(".").map(Number);
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      if ((b[i] || 0) > (a[i] || 0)) return true;
+      if ((b[i] || 0) < (a[i] || 0)) return false;
+    }
+    return false;
+  }
+
   // ===== File System IPC Handlers =====
 
   // Show save dialog

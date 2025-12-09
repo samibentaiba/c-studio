@@ -57,5 +57,19 @@ interface Window {
     
     // WASM path helpers
     getClangFormatWasmPath: () => Promise<string>;
+    
+    // Auto-update
+    checkForUpdates: () => Promise<UpdateInfo>;
   };
+}
+
+interface UpdateInfo {
+  hasUpdate: boolean;
+  currentVersion?: string;
+  latestVersion?: string;
+  releaseUrl?: string;
+  downloadUrl?: string;
+  releaseNotes?: string;
+  releaseName?: string;
+  error?: string;
 }
