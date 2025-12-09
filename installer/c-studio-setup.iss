@@ -10,7 +10,7 @@
 
 ; Download URLs
 #define AppZipURL "https://github.com/samibentaiba/c-studio/releases/download/v1.4.0/c-studio-win32-x64-1.4.0.zip"
-#define MinGWZipURL "https://github.com/brechtsanders/winlibs_mingw/releases/download/14.2.0posix-19.1.7-12.0.0-ucrt-r3/winlibs-x86_64-posix-seh-gcc-14.2.0-llvm-19.1.7-mingw-w64ucrt-12.0.0-r3.zip"
+#define MinGWZipURL "https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0posix-18.1.5-11.0.1-ucrt-r8/winlibs-x86_64-posix-seh-gcc-13.2.0-llvm-18.1.5-mingw-w64ucrt-11.0.1-r8.zip"
 
 [Setup]
 ; Basic Info
@@ -110,8 +110,8 @@ begin
         AppZipPath := ExpandConstant('{tmp}\c-studio-app.zip');
         if FileExists(AppZipPath) then begin
           DownloadPage.SetText('Extracting C-Studio...', '');
-          // Use PowerShell to extract
-          Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "Expand-Archive -Path ''' + AppZipPath + ''' -DestinationPath ''' + ExpandConstant('{app}') + ''' -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+          // Use PowerShell to extract - extract contents from inner folder
+          Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "Expand-Archive -Path ''' + AppZipPath + ''' -DestinationPath ''' + ExpandConstant('{tmp}\extract-app') + ''' -Force; $folder = Get-ChildItem ''' + ExpandConstant('{tmp}\extract-app') + ''' -Directory | Select-Object -First 1; if ($folder) { Copy-Item -Path (Join-Path $folder.FullName ''*'') -Destination ''' + ExpandConstant('{app}') + ''' -Recurse -Force } else { Copy-Item -Path ''' + ExpandConstant('{tmp}\extract-app\*') + ''' -Destination ''' + ExpandConstant('{app}') + ''' -Recurse -Force }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
         end;
         
         // Extract MinGW ZIP
