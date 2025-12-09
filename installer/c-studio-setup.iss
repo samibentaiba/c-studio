@@ -87,10 +87,32 @@ begin
   DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
 end;
 
+// Helper function to extract ZIP using PowerShell
+function ExtractZip(ZipPath, DestPath: String): Boolean;
+var
+  ResultCode: Integer;
+  Cmd: String;
+begin
+  // Simple PowerShell extraction command
+  Cmd := 'Expand-Archive -Path "' + ZipPath + '" -DestinationPath "' + DestPath + '" -Force';
+  Result := Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "' + Cmd + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := Result and (ResultCode = 0);
+end;
+
+// Helper function to copy folder contents
+function CopyFolderContents(SrcPath, DestPath: String): Boolean;
+var
+  ResultCode: Integer;
+  Cmd: String;
+begin
+  Cmd := 'Copy-Item -Path "' + SrcPath + '\*" -Destination "' + DestPath + '" -Recurse -Force';
+  Result := Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "' + Cmd + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := Result and (ResultCode = 0);
+end;
+
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
-  AppZipPath, MinGWZipPath: String;
-  ResultCode: Integer;
+  AppZipPath, MinGWZipPath, TempExtract, AppDir: String;
 begin
   Result := True;
   
@@ -106,22 +128,29 @@ begin
       try
         DownloadPage.Download;
         
+        AppDir := ExpandConstant('{app}');
+        TempExtract := ExpandConstant('{tmp}\extract');
+        
         // Extract app ZIP
         AppZipPath := ExpandConstant('{tmp}\c-studio-app.zip');
         if FileExists(AppZipPath) then begin
           DownloadPage.SetText('Extracting C-Studio...', '');
-          // Use PowerShell to extract - extract contents from inner folder
-          Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "Expand-Archive -Path ''' + AppZipPath + ''' -DestinationPath ''' + ExpandConstant('{tmp}\extract-app') + ''' -Force; $folder = Get-ChildItem ''' + ExpandConstant('{tmp}\extract-app') + ''' -Directory | Select-Object -First 1; if ($folder) { Copy-Item -Path (Join-Path $folder.FullName ''*'') -Destination ''' + ExpandConstant('{app}') + ''' -Recurse -Force } else { Copy-Item -Path ''' + ExpandConstant('{tmp}\extract-app\*') + ''' -Destination ''' + ExpandConstant('{app}') + ''' -Recurse -Force }"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+          if not ExtractZip(AppZipPath, TempExtract) then
+            Log('Failed to extract app ZIP');
+          
+          // Copy from extracted folder (ZIP contains a folder)
+          if not CopyFolderContents(TempExtract + '\c-studio-win32-x64', AppDir) then
+            // Try direct copy if folder structure is different
+            CopyFolderContents(TempExtract, AppDir);
         end;
         
         // Extract MinGW ZIP
         MinGWZipPath := ExpandConstant('{tmp}\mingw64.zip');
         if FileExists(MinGWZipPath) then begin
           DownloadPage.SetText('Extracting MinGW compiler...', '');
-          // Create resources folder
-          ForceDirectories(ExpandConstant('{app}\resources'));
-          // Extract MinGW
-          Exec('powershell.exe', '-ExecutionPolicy Bypass -Command "Expand-Archive -Path ''' + MinGWZipPath + ''' -DestinationPath ''' + ExpandConstant('{app}\resources') + ''' -Force"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+          ForceDirectories(AppDir + '\resources');
+          if not ExtractZip(MinGWZipPath, AppDir + '\resources') then
+            Log('Failed to extract MinGW ZIP');
         end;
         
         Result := True;
