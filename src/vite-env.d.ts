@@ -60,6 +60,8 @@ interface Window {
     
     // Auto-update
     checkForUpdates: () => Promise<UpdateInfo>;
+    downloadAndInstallUpdate: (downloadUrl: string, version: string) => Promise<{ success: boolean; error?: string }>;
+    onUpdateProgress: (callback: (data: { status: string; progress?: number }) => void) => void;
   };
 }
 

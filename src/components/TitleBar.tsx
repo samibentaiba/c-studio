@@ -240,7 +240,7 @@ export function TitleBar({
         <DropdownMenu label="Help" items={helpMenuItems} />
       </div>
       <div className="flex-1 text-center text-xs font-medium" style={{ color: theme.ui.foregroundMuted }}>
-        C-Studio - v1.4.2
+        C-Studio - v1.4.3
       </div>
       <div className="flex items-center gap-2 mr-2">
         <ThemeSelector />

@@ -163,6 +163,160 @@ app.on("ready", () => {
     return false;
   }
 
+  // Download and install update
+  ipcMain.handle("download-and-install-update", async (event, downloadUrl: string, version: string) => {
+    try {
+      const os = await import("os");
+      const https = await import("https");
+      const http = await import("http");
+      const { pipeline } = await import("stream/promises");
+      const { spawn } = await import("child_process");
+      
+      // Notify renderer of progress
+      const sendProgress = (status: string, progress?: number) => {
+        if (mainWindow) {
+          mainWindow.webContents.send("update-progress", { status, progress });
+        }
+      };
+
+      sendProgress("Downloading update...", 0);
+
+      // Download the ZIP file
+      const tempDir = os.tmpdir();
+      const zipPath = path.join(tempDir, `c-studio-update-${version}.zip`);
+      
+      // Use https or http based on URL
+      const protocol = downloadUrl.startsWith("https") ? https : http;
+      
+      // Follow redirects for GitHub releases
+      const downloadWithRedirects = (url: string): Promise<void> => {
+        return new Promise((resolve, reject) => {
+          const request = protocol.get(url, { headers: { "User-Agent": "C-Studio-App" } }, (response) => {
+            // Handle redirects
+            if (response.statusCode === 302 || response.statusCode === 301) {
+              const redirectUrl = response.headers.location;
+              if (redirectUrl) {
+                downloadWithRedirects(redirectUrl).then(resolve).catch(reject);
+                return;
+              }
+            }
+            
+            if (response.statusCode !== 200) {
+              reject(new Error(`Failed to download: ${response.statusCode}`));
+              return;
+            }
+            
+            const totalSize = parseInt(response.headers["content-length"] || "0", 10);
+            let downloadedSize = 0;
+            
+            const writeStream = fs.createWriteStream(zipPath);
+            
+            response.on("data", (chunk) => {
+              downloadedSize += chunk.length;
+              if (totalSize > 0) {
+                const progress = Math.round((downloadedSize / totalSize) * 100);
+                sendProgress("Downloading update...", progress);
+              }
+            });
+            
+            response.pipe(writeStream);
+            
+            writeStream.on("finish", () => {
+              writeStream.close();
+              resolve();
+            });
+            
+            writeStream.on("error", reject);
+          });
+          
+          request.on("error", reject);
+        });
+      };
+      
+      await downloadWithRedirects(downloadUrl);
+      
+      sendProgress("Extracting update...", 100);
+      
+      // Get installation directory (where app is running from)
+      const installDir = app.isPackaged 
+        ? path.dirname(app.getPath("exe"))
+        : path.join(__dirname, "..", "..");
+      
+      // Create update script that runs after app closes
+      const updateScript = path.join(tempDir, "c-studio-update.ps1");
+      const scriptContent = `
+# Wait for app to close
+Start-Sleep -Seconds 2
+
+# Extract ZIP (skip mingw64 folder if it exists)
+$zipPath = "${zipPath.replace(/\\/g, "\\\\")}"
+$installDir = "${installDir.replace(/\\/g, "\\\\")}"
+
+# Create temp extraction folder
+$tempExtract = Join-Path $env:TEMP "c-studio-extract"
+if (Test-Path $tempExtract) { Remove-Item -Recurse -Force $tempExtract }
+Expand-Archive -Path $zipPath -DestinationPath $tempExtract -Force
+
+# Find the inner folder (c-studio-win32-x64)
+$innerFolder = Get-ChildItem -Path $tempExtract -Directory | Select-Object -First 1
+
+if ($innerFolder) {
+    # Copy all files except mingw64 (preserve existing)
+    Get-ChildItem -Path $innerFolder.FullName | Where-Object { $_.Name -ne "resources" } | ForEach-Object {
+        $dest = Join-Path $installDir $_.Name
+        if ($_.PSIsContainer) {
+            Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
+        } else {
+            Copy-Item -Path $_.FullName -Destination $dest -Force
+        }
+    }
+    
+    # Handle resources folder specially - preserve mingw64
+    $resourcesSrc = Join-Path $innerFolder.FullName "resources"
+    if (Test-Path $resourcesSrc) {
+        $resourcesDest = Join-Path $installDir "resources"
+        Get-ChildItem -Path $resourcesSrc | Where-Object { $_.Name -ne "mingw64" } | ForEach-Object {
+            $dest = Join-Path $resourcesDest $_.Name
+            if ($_.PSIsContainer) {
+                Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
+            } else {
+                Copy-Item -Path $_.FullName -Destination $dest -Force
+            }
+        }
+    }
+}
+
+# Cleanup
+Remove-Item -Recurse -Force $tempExtract -ErrorAction SilentlyContinue
+Remove-Item -Force $zipPath -ErrorAction SilentlyContinue
+
+# Restart app
+$exePath = Join-Path $installDir "c-studio.exe"
+if (Test-Path $exePath) { Start-Process $exePath }
+`;
+      
+      fs.writeFileSync(updateScript, scriptContent, "utf-8");
+      
+      sendProgress("Installing update...", 100);
+      
+      // Run update script and quit app
+      spawn("powershell", ["-ExecutionPolicy", "Bypass", "-File", updateScript], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
+      
+      // Quit app after short delay
+      setTimeout(() => {
+        app.quit();
+      }, 500);
+      
+      return { success: true };
+    } catch (error) {
+      console.error("Update failed:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
   // ===== File System IPC Handlers =====
 
   // Show save dialog

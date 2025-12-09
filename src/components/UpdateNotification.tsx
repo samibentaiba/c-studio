@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface UpdateInfo {
   hasUpdate: boolean;
@@ -15,19 +15,54 @@ interface UpdateNotificationProps {
   onDismiss: () => void;
 }
 
+type UpdateState = "idle" | "downloading" | "installing" | "error";
+
 export function UpdateNotification({ updateInfo, onDismiss }: UpdateNotificationProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [updateState, setUpdateState] = useState<UpdateState>("idle");
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Listen for update progress
+    window.electron.onUpdateProgress((data) => {
+      setStatusText(data.status);
+      if (data.progress !== undefined) {
+        setProgress(data.progress);
+      }
+      if (data.status.includes("Installing")) {
+        setUpdateState("installing");
+      }
+    });
+  }, []);
 
   if (!updateInfo.hasUpdate) return null;
 
-  const handleDownload = () => {
-    // Open the download URL in the default browser
-    if (updateInfo.downloadUrl) {
-      window.open(updateInfo.downloadUrl, "_blank");
-    } else if (updateInfo.releaseUrl) {
-      window.open(updateInfo.releaseUrl, "_blank");
+  const handleUpdateNow = async () => {
+    if (!updateInfo.downloadUrl || !updateInfo.latestVersion) return;
+    
+    setUpdateState("downloading");
+    setProgress(0);
+    setError(null);
+    
+    try {
+      const result = await window.electron.downloadAndInstallUpdate(
+        updateInfo.downloadUrl,
+        updateInfo.latestVersion
+      );
+      
+      if (!result.success) {
+        setUpdateState("error");
+        setError(result.error || "Update failed");
+      }
+    } catch (err) {
+      setUpdateState("error");
+      setError((err as Error).message);
     }
   };
+
+  const isUpdating = updateState === "downloading" || updateState === "installing";
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-300">
@@ -35,22 +70,27 @@ export function UpdateNotification({ updateInfo, onDismiss }: UpdateNotification
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-[#1e1e1e] border-b border-[#3c3c3c]">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-white">Update Available</span>
+            <div className={`w-2 h-2 rounded-full ${isUpdating ? "bg-blue-500 animate-pulse" : "bg-green-500"}`} />
+            <span className="text-sm font-medium text-white">
+              {isUpdating ? "Updating..." : "Update Available"}
+            </span>
           </div>
-          <button
-            onClick={onDismiss}
-            className="text-[#999999] hover:text-white transition-colors p-1"
-            title="Dismiss"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {!isUpdating && (
+            <button
+              onClick={onDismiss}
+              className="text-[#999999] hover:text-white transition-colors p-1"
+              title="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Content */}
         <div className="p-4">
+          {/* Version info */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[#999999] text-sm">
               v{updateInfo.currentVersion}
@@ -61,15 +101,38 @@ export function UpdateNotification({ updateInfo, onDismiss }: UpdateNotification
             </span>
           </div>
 
+          {/* Progress bar (when updating) */}
+          {isUpdating && (
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-[#999999] mb-1">
+                <span>{statusText}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full h-2 bg-[#1e1e1e] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Error message */}
+          {updateState === "error" && error && (
+            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+              {error}
+            </div>
+          )}
+
           {/* Release name */}
-          {updateInfo.releaseName && (
+          {!isUpdating && updateInfo.releaseName && (
             <h3 className="text-white font-medium mb-2">
               {updateInfo.releaseName}
             </h3>
           )}
 
           {/* Expandable release notes */}
-          {updateInfo.releaseNotes && (
+          {!isUpdating && updateInfo.releaseNotes && (
             <div className="mb-4">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -97,18 +160,41 @@ export function UpdateNotification({ updateInfo, onDismiss }: UpdateNotification
 
           {/* Action buttons */}
           <div className="flex gap-2">
-            <button
-              onClick={handleDownload}
-              className="flex-1 bg-[#007acc] hover:bg-[#1a9fff] text-white text-sm font-medium py-2 px-4 rounded transition-colors"
-            >
-              Download Update
-            </button>
-            <button
-              onClick={onDismiss}
-              className="px-4 py-2 text-sm text-[#999999] hover:text-white transition-colors"
-            >
-              Later
-            </button>
+            {updateState === "error" ? (
+              <>
+                <button
+                  onClick={handleUpdateNow}
+                  className="flex-1 bg-[#007acc] hover:bg-[#1a9fff] text-white text-sm font-medium py-2 px-4 rounded transition-colors"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={onDismiss}
+                  className="px-4 py-2 text-sm text-[#999999] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : isUpdating ? (
+              <div className="flex-1 text-center text-sm text-[#999999] py-2">
+                {updateState === "installing" ? "Restarting after install..." : "Please wait..."}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleUpdateNow}
+                  className="flex-1 bg-[#007acc] hover:bg-[#1a9fff] text-white text-sm font-medium py-2 px-4 rounded transition-colors"
+                >
+                  Update Now
+                </button>
+                <button
+                  onClick={onDismiss}
+                  className="px-4 py-2 text-sm text-[#999999] hover:text-white transition-colors"
+                >
+                  Later
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
