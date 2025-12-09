@@ -4,6 +4,7 @@ import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
 import { TitleBar } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
+import { ThemeProvider } from "./ThemeContext";
 import { FileSystemItem, LogMessage, LogType } from "./types";
 
 // Helper to flatten tree for compiler (temporary until backend supports tree)
@@ -790,7 +791,7 @@ int main() {
     if (result.canceled || !result.filePath) return;
 
     const workspace = {
-      version: "1.4.1",
+      version: "1.4.2",
       name: "C-Studio Project",
       files: files,
     };
@@ -834,7 +835,8 @@ int main() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-background text-foreground font-sans overflow-hidden">
+    <ThemeProvider>
+    <div className="flex flex-col h-screen w-full font-sans overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-dark)', color: 'var(--theme-fg)' }}>
       <TitleBar
         onNewFile={handleNewFile}
         onOpenFile={handleOpenFile}
@@ -887,5 +889,6 @@ int main() {
         />
       )}
     </div>
+    </ThemeProvider>
   );
 }

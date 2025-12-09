@@ -197,7 +197,11 @@ export function Sidebar({
 
   return (
     <div
-      className="h-full flex flex-col bg-[#252526] border-r border-white/10"
+      className="h-full flex flex-col"
+      style={{
+        backgroundColor: 'var(--theme-bg)',
+        borderRight: '1px solid var(--theme-border)',
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();

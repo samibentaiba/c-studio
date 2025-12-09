@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTheme, appThemes } from "../ThemeContext";
+import { Palette } from "lucide-react";
 
 interface MenuItem {
   label?: string;
@@ -15,6 +17,7 @@ interface MenuProps {
 function DropdownMenu({ label, items }: MenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,22 +38,35 @@ function DropdownMenu({ label, items }: MenuProps) {
   return (
     <div className="relative" ref={menuRef}>
       <div
-        className={`px-2 py-1 text-xs text-[#cccccc] hover:bg-[#37373d] rounded cursor-pointer transition-colors ${
-          isOpen ? "bg-[#37373d]" : ""
-        }`}
+        className="px-2 py-1 text-xs cursor-pointer transition-colors rounded"
+        style={{
+          color: theme.ui.foreground,
+          backgroundColor: isOpen ? theme.ui.backgroundLight : "transparent",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isOpen ? theme.ui.backgroundLight : "transparent")}
         onClick={() => setIsOpen(!isOpen)}
       >
         {label}
       </div>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-[#252526] border border-[#3c3c3c] rounded-md shadow-lg min-w-[200px] py-1 z-50">
+        <div
+          className="absolute top-full left-0 mt-1 rounded-md shadow-lg min-w-[200px] py-1 z-50"
+          style={{
+            backgroundColor: theme.ui.background,
+            border: `1px solid ${theme.ui.border}`,
+          }}
+        >
           {items.map((item, index) =>
             item.divider ? (
-              <div key={index} className="border-t border-[#3c3c3c] my-1" />
+              <div key={index} style={{ borderTop: `1px solid ${theme.ui.border}` }} className="my-1" />
             ) : (
               <div
                 key={index}
-                className="px-3 py-1.5 text-xs text-[#cccccc] hover:bg-[#094771] cursor-pointer flex justify-between items-center"
+                className="px-3 py-1.5 text-xs cursor-pointer flex justify-between items-center transition-colors"
+                style={{ color: theme.ui.foreground }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.accent)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 onClick={() => {
                   item.action?.();
                   setIsOpen(false);
@@ -58,13 +74,93 @@ function DropdownMenu({ label, items }: MenuProps) {
               >
                 <span>{item.label}</span>
                 {item.shortcut && (
-                  <span className="text-[#808080] text-[10px] ml-4">
+                  <span className="text-[10px] ml-4" style={{ color: theme.ui.foregroundMuted }}>
                     {item.shortcut}
                   </span>
                 )}
               </div>
             )
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Theme Selector Component
+function ThemeSelector() {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, themeId, setTheme } = useTheme();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <div
+        className="px-2 py-1 text-xs cursor-pointer transition-colors rounded flex items-center gap-1"
+        style={{
+          color: theme.ui.foreground,
+          backgroundColor: isOpen ? theme.ui.backgroundLight : "transparent",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isOpen ? theme.ui.backgroundLight : "transparent")}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <Palette size={12} />
+        Theme
+      </div>
+      {isOpen && (
+        <div
+          className="absolute top-full right-0 mt-1 rounded-md shadow-lg min-w-[160px] py-1 z-50"
+          style={{
+            backgroundColor: theme.ui.background,
+            border: `1px solid ${theme.ui.border}`,
+          }}
+        >
+          {appThemes.map((t) => (
+            <div
+              key={t.id}
+              className="px-3 py-2 text-xs cursor-pointer flex items-center gap-2 transition-colors"
+              style={{
+                color: themeId === t.id ? "#ffffff" : theme.ui.foreground,
+                backgroundColor: themeId === t.id ? theme.ui.accent : "transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (themeId !== t.id) e.currentTarget.style.backgroundColor = theme.ui.backgroundLight;
+              }}
+              onMouseLeave={(e) => {
+                if (themeId !== t.id) e.currentTarget.style.backgroundColor = "transparent";
+              }}
+              onClick={() => {
+                setTheme(t.id);
+                setIsOpen(false);
+              }}
+            >
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{
+                  backgroundColor: t.editor.background,
+                  border: `1px solid ${t.ui.border}`,
+                }}
+              />
+              {t.name}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -88,6 +184,8 @@ export function TitleBar({
   onExportWorkspace,
   onImportWorkspace,
 }: TitleBarProps) {
+  const { theme } = useTheme();
+
   const fileMenuItems: MenuItem[] = [
     { label: "New File", action: onNewFile, shortcut: "Ctrl+N" },
     { divider: true },
@@ -120,9 +218,18 @@ export function TitleBar({
   ];
 
   return (
-    <div className="h-8 bg-[#1e1e1e] flex items-center px-2 select-none border-b border-white/10 w-full draggable">
+    <div
+      className="h-8 flex items-center px-2 select-none w-full draggable"
+      style={{
+        backgroundColor: theme.ui.backgroundDark,
+        borderBottom: `1px solid ${theme.ui.border}`,
+      }}
+    >
       <div className="flex items-center gap-2 mr-4">
-        <div className="w-4 h-4 bg-blue-500 rounded-sm flex items-center justify-center">
+        <div
+          className="w-4 h-4 rounded-sm flex items-center justify-center"
+          style={{ backgroundColor: theme.ui.accent }}
+        >
           <span className="text-[10px] font-bold text-white">C</span>
         </div>
       </div>
@@ -132,10 +239,12 @@ export function TitleBar({
         <DropdownMenu label="View" items={viewMenuItems} />
         <DropdownMenu label="Help" items={helpMenuItems} />
       </div>
-      <div className="flex-1 text-center text-xs text-[#999999] font-medium">
-        C-Studio - v1.4.1
+      <div className="flex-1 text-center text-xs font-medium" style={{ color: theme.ui.foregroundMuted }}>
+        C-Studio - v1.4.2
       </div>
-      <div className="w-24" /> {/* Spacer for window controls */}
+      <div className="flex items-center gap-2 mr-2">
+        <ThemeSelector />
+      </div>
     </div>
   );
 }

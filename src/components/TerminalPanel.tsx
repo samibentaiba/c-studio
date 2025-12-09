@@ -29,9 +29,9 @@ export function TerminalPanel({ logs, onClear, onInput }: TerminalPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e] border-t border-white/10">
-      <div className="h-10 border-b border-white/10 flex items-center justify-between px-4 bg-[#2d2d2d]">
-        <span className="text-sm font-medium text-foreground flex items-center gap-2">
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--theme-terminal-bg)', borderTop: '1px solid var(--theme-border)' }}>
+      <div className="h-10 flex items-center justify-between px-4" style={{ backgroundColor: 'var(--theme-bg-light)', borderBottom: '1px solid var(--theme-border)' }}>
+        <span className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--theme-fg)' }}>
           <Terminal size={16} /> Output
         </span>
         <Button variant="ghost" size="icon" onClick={onClear} className="h-8 w-8">

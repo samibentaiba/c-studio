@@ -1,9 +1,10 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { Play, FileCode } from "lucide-react";
 import { Button } from "./ui/button";
 import { FileSystemItem } from "../types";
 import init, { format } from "@wasm-fmt/clang-format";
+import { useTheme } from "../ThemeContext";
 
 interface Marker {
   file: string;
@@ -30,23 +31,78 @@ export function MonacoEditor({
 }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
+  const { theme, themeId } = useTheme();
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Register custom theme
+    monaco.editor.defineTheme("custom-theme", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: theme.syntax.comment.replace("#", ""), fontStyle: "italic" },
+        { token: "keyword", foreground: theme.syntax.keyword.replace("#", "") },
+        { token: "string", foreground: theme.syntax.string.replace("#", "") },
+        { token: "number", foreground: theme.syntax.number.replace("#", "") },
+        { token: "type", foreground: theme.syntax.type.replace("#", "") },
+        { token: "function", foreground: theme.syntax.function.replace("#", "") },
+        { token: "variable", foreground: theme.syntax.variable.replace("#", "") },
+        { token: "operator", foreground: theme.syntax.operator.replace("#", "") },
+      ],
+      colors: {
+        "editor.background": theme.editor.background,
+        "editor.foreground": theme.editor.foreground,
+        "editor.lineHighlightBackground": theme.editor.lineHighlight,
+        "editor.selectionBackground": theme.editor.selection,
+        "editorCursor.foreground": theme.editor.cursor,
+      },
+    });
+
+    monaco.editor.setTheme("custom-theme");
   };
 
-  React.useEffect(() => {
+  // Update theme when changed
+  useEffect(() => {
+    if (monacoRef.current) {
+      const monaco = monacoRef.current;
+      monaco.editor.defineTheme("custom-theme", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [
+          { token: "comment", foreground: theme.syntax.comment.replace("#", ""), fontStyle: "italic" },
+          { token: "keyword", foreground: theme.syntax.keyword.replace("#", "") },
+          { token: "string", foreground: theme.syntax.string.replace("#", "") },
+          { token: "number", foreground: theme.syntax.number.replace("#", "") },
+          { token: "type", foreground: theme.syntax.type.replace("#", "") },
+          { token: "function", foreground: theme.syntax.function.replace("#", "") },
+          { token: "variable", foreground: theme.syntax.variable.replace("#", "") },
+          { token: "operator", foreground: theme.syntax.operator.replace("#", "") },
+        ],
+        colors: {
+          "editor.background": theme.editor.background,
+          "editor.foreground": theme.editor.foreground,
+          "editor.lineHighlightBackground": theme.editor.lineHighlight,
+          "editor.selectionBackground": theme.editor.selection,
+          "editorCursor.foreground": theme.editor.cursor,
+        },
+      });
+      monaco.editor.setTheme("custom-theme");
+    }
+  }, [themeId, theme]);
+
+  useEffect(() => {
     if (editorRef.current && monacoRef.current && activeFile) {
       const model = editorRef.current.getModel();
       if (model) {
         const monacoMarkers = markers
-          .filter((m) => m.file === activeFile.name) // Filter markers for current file
+          .filter((m) => m.file === activeFile.name)
           .map((m) => ({
             startLineNumber: m.line,
             startColumn: m.column,
             endLineNumber: m.line,
-            endColumn: m.column + 1, // Highlight at least one char
+            endColumn: m.column + 1,
             message: m.message,
             severity:
               m.severity === "error"
@@ -59,11 +115,10 @@ export function MonacoEditor({
   }, [markers, activeFile]);
 
   // Register C Formatter
-  React.useEffect(() => {
+  useEffect(() => {
     if (monacoRef.current) {
       const monaco = monacoRef.current;
-      
-      // Initialize WASM with environment-appropriate path from main process
+
       const initWasm = async () => {
         try {
           const wasmPath = await window.electron.getClangFormatWasmPath();
@@ -78,7 +133,6 @@ export function MonacoEditor({
         provideDocumentFormattingEdits: async (model: any) => {
           const text = model.getValue();
           try {
-            // Use Chromium style as a good default
             const formatted = await format(text, "main.c", JSON.stringify({ BasedOnStyle: "Chromium", IndentWidth: 4 }));
             return [
               {
@@ -101,7 +155,6 @@ export function MonacoEditor({
     editorRef.current?.getAction("editor.action.formatDocument")?.run();
   };
 
-  // Determine language based on file extension
   const getLanguage = (filename: string) => {
     if (filename.endsWith(".c") || filename.endsWith(".h")) return "c";
     if (filename.endsWith(".cpp")) return "cpp";
@@ -112,11 +165,17 @@ export function MonacoEditor({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
-      <div className="h-10 border-b border-white/10 bg-[#2d2d2d] flex items-center justify-between px-4">
+    <div className="flex-1 flex flex-col min-w-0" style={{ backgroundColor: theme.editor.background }}>
+      <div
+        className="h-10 flex items-center justify-between px-4"
+        style={{
+          backgroundColor: theme.ui.backgroundLight,
+          borderBottom: `1px solid ${theme.ui.border}`,
+        }}
+      >
         <div className="flex items-center gap-2">
-          <FileCode size={16} className="text-blue-500" />
-          <span className="text-foreground font-medium">{activeFile.name}</span>
+          <FileCode size={16} style={{ color: theme.ui.accent }} />
+          <span className="font-medium" style={{ color: theme.ui.foreground }}>{activeFile.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -149,7 +208,7 @@ export function MonacoEditor({
           height="100%"
           language={getLanguage(activeFile.name)}
           value={activeFile.content || ""}
-          theme="vs-dark"
+          theme="custom-theme"
           onChange={(value) => onContentChange(value || "")}
           onMount={handleEditorDidMount}
           options={{
