@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
-import { Play, FileCode } from "lucide-react";
+import { Play } from "lucide-react";
 import { Button } from "./ui/button";
 import { FileSystemItem } from "../types";
 import init, { format } from "@wasm-fmt/clang-format";
 import { useTheme } from "../ThemeContext";
+import { EditorTabs } from "./EditorTabs";
 
 interface Marker {
   file: string;
@@ -20,6 +21,10 @@ interface MonacoEditorProps {
   onRun: () => void;
   isCompiling: boolean;
   markers: Marker[];
+  openTabs: string[];
+  files: FileSystemItem[];
+  onTabClick: (fileId: string) => void;
+  onTabClose: (fileId: string) => void;
 }
 
 export function MonacoEditor({
@@ -28,6 +33,10 @@ export function MonacoEditor({
   onRun,
   isCompiling,
   markers,
+  openTabs,
+  files,
+  onTabClick,
+  onTabClose,
 }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -166,17 +175,23 @@ export function MonacoEditor({
 
   return (
     <div className="flex-1 flex flex-col min-w-0" style={{ backgroundColor: theme.editor.background }}>
+      {/* Tab bar */}
+      <EditorTabs
+        openTabs={openTabs}
+        activeFileId={activeFile.id}
+        files={files}
+        onTabClick={onTabClick}
+        onTabClose={onTabClose}
+      />
+      
+      {/* Toolbar */}
       <div
-        className="h-10 flex items-center justify-between px-4"
+        className="h-10 flex items-center justify-end px-4"
         style={{
           backgroundColor: theme.ui.backgroundLight,
           borderBottom: `1px solid ${theme.ui.border}`,
         }}
       >
-        <div className="flex items-center gap-2">
-          <FileCode size={16} style={{ color: theme.ui.accent }} />
-          <span className="font-medium" style={{ color: theme.ui.foreground }}>{activeFile.name}</span>
-        </div>
         <div className="flex items-center gap-2">
           <Button
             onClick={handleFormat}

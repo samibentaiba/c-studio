@@ -54,6 +54,7 @@ export default function CCodeStudio() {
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [openTabs, setOpenTabs] = useState<string[]>(["1"]); // Track open tabs
 
   // Recursive search for active file
   const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
@@ -110,6 +111,8 @@ export default function CCodeStudio() {
     
     if (type === "file") {
       setActiveFileId(newItem.id);
+      // Add to open tabs if not already there
+      setOpenTabs((prev) => prev.includes(newItem.id) ? prev : [...prev, newItem.id]);
     }
   };
 
@@ -122,6 +125,8 @@ export default function CCodeStudio() {
     };
     setFiles(deleteFromTree(files));
     if (activeFileId === id) setActiveFileId(null);
+    // Remove from open tabs
+    setOpenTabs((prev) => prev.filter((tabId) => tabId !== id));
   };
 
   const handleToggleFolder = (id: string) => {
@@ -673,6 +678,36 @@ int main() {
     }
   };
 
+  // Tab handlers
+  const handleFileSelect = (file: FileSystemItem) => {
+    setActiveFileId(file.id);
+    // Add to open tabs if not already there
+    if (!openTabs.includes(file.id)) {
+      setOpenTabs((prev) => [...prev, file.id]);
+    }
+  };
+
+  const handleTabClick = (fileId: string) => {
+    setActiveFileId(fileId);
+  };
+
+  const handleTabClose = (fileId: string) => {
+    const tabIndex = openTabs.indexOf(fileId);
+    const newTabs = openTabs.filter((id) => id !== fileId);
+    setOpenTabs(newTabs);
+    
+    // If closing active tab, switch to another tab
+    if (activeFileId === fileId) {
+      if (newTabs.length > 0) {
+        // Switch to next tab, or previous if closing last
+        const newIndex = Math.min(tabIndex, newTabs.length - 1);
+        setActiveFileId(newTabs[newIndex]);
+      } else {
+        setActiveFileId(null);
+      }
+    }
+  };
+
   const handleTerminalInput = (input: string) => {
     window.electron.writeStdin(input);
     addLog("info", input + "\n"); // Echo input to terminal
@@ -791,7 +826,7 @@ int main() {
     if (result.canceled || !result.filePath) return;
 
     const workspace = {
-      version: "1.4.3",
+      version: "1.4.4",
       name: "C-Studio Project",
       files: files,
     };
@@ -850,7 +885,7 @@ int main() {
           <Sidebar
           files={files}
           activeFileId={activeFileId}
-          onFileSelect={(file) => setActiveFileId(file.id)}
+          onFileSelect={handleFileSelect}
           onFileCreate={handleFileCreate}
           onDelete={handleDelete}
           onToggleFolder={handleToggleFolder}
@@ -868,6 +903,10 @@ int main() {
               onRun={handleRun}
               isCompiling={isCompiling}
               markers={markers}
+              openTabs={openTabs}
+              files={files}
+              onTabClick={handleTabClick}
+              onTabClose={handleTabClose}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
