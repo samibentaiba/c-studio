@@ -1,5 +1,5 @@
-import React from "react";
-import { X, FileCode } from "lucide-react";
+import React, { useState } from "react";
+import { X, FileCode, SplitSquareHorizontal } from "lucide-react";
 import { FileSystemItem } from "../types";
 import { useTheme } from "../ThemeContext";
 
@@ -9,6 +9,7 @@ interface EditorTabsProps {
   files: FileSystemItem[];
   onTabClick: (fileId: string) => void;
   onTabClose: (fileId: string) => void;
+  onSplitRight?: (fileId: string) => void;
 }
 
 export function EditorTabs({
@@ -17,8 +18,10 @@ export function EditorTabs({
   files,
   onTabClick,
   onTabClose,
+  onSplitRight,
 }: EditorTabsProps) {
   const { theme } = useTheme();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
 
   // Find file by ID recursively
   const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
@@ -32,11 +35,20 @@ export function EditorTabs({
     return null;
   };
 
+  // Close context menu when clicking outside
+  React.useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
+    }
+  }, [contextMenu]);
+
   if (openTabs.length === 0) return null;
 
   return (
     <div
-      className="flex items-center overflow-x-auto"
+      className="flex items-center overflow-x-auto relative"
       style={{
         backgroundColor: theme.ui.backgroundDark,
         borderBottom: `1px solid ${theme.ui.border}`,
@@ -65,6 +77,12 @@ export function EditorTabs({
                 onTabClose(tabId);
               }
             }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              if (onSplitRight) {
+                setContextMenu({ x: e.clientX, y: e.clientY, tabId });
+              }
+            }}
           >
             <FileCode
               size={14}
@@ -90,6 +108,31 @@ export function EditorTabs({
           </div>
         );
       })}
+
+      {/* Context Menu */}
+      {contextMenu && onSplitRight && (
+        <div
+          className="fixed z-50 py-1 rounded-md shadow-lg min-w-[140px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: theme.ui.background,
+            border: `1px solid ${theme.ui.border}`,
+          }}
+        >
+          <button
+            className="w-full px-3 py-1.5 text-xs text-left flex items-center gap-2 hover:bg-white/10"
+            style={{ color: theme.ui.foreground }}
+            onClick={() => {
+              onSplitRight(contextMenu.tabId);
+              setContextMenu(null);
+            }}
+          >
+            <SplitSquareHorizontal size={14} />
+            Split Right
+          </button>
+        </div>
+      )}
     </div>
   );
 }

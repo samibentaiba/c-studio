@@ -55,6 +55,11 @@ export default function CCodeStudio() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [openTabs, setOpenTabs] = useState<string[]>(["1"]); // Track open tabs
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Split editor state
+  const [splitTabs, setSplitTabs] = useState<string[]>([]); // Tabs for second pane
+  const [activeSplitFileId, setActiveSplitFileId] = useState<string | null>(null);
 
   // Recursive search for active file
   const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
@@ -708,10 +713,57 @@ int main() {
     }
   };
 
+  // Split editor handlers
+  const handleSplitRight = (fileId: string) => {
+    // Move file to split pane
+    if (!splitTabs.includes(fileId)) {
+      setSplitTabs((prev) => [...prev, fileId]);
+    }
+    setActiveSplitFileId(fileId);
+    // Remove from main tabs
+    setOpenTabs((prev) => prev.filter((id) => id !== fileId));
+    if (activeFileId === fileId) {
+      const remaining = openTabs.filter((id) => id !== fileId);
+      setActiveFileId(remaining.length > 0 ? remaining[0] : null);
+    }
+  };
+
+  const handleSplitTabClick = (fileId: string) => {
+    setActiveSplitFileId(fileId);
+  };
+
+  const handleSplitTabClose = (fileId: string) => {
+    const tabIndex = splitTabs.indexOf(fileId);
+    const newTabs = splitTabs.filter((id) => id !== fileId);
+    setSplitTabs(newTabs);
+    
+    if (activeSplitFileId === fileId) {
+      if (newTabs.length > 0) {
+        const newIndex = Math.min(tabIndex, newTabs.length - 1);
+        setActiveSplitFileId(newTabs[newIndex]);
+      } else {
+        setActiveSplitFileId(null);
+      }
+    }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "b") {
+        e.preventDefault();
+        setIsSidebarCollapsed((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleTerminalInput = (input: string) => {
     window.electron.writeStdin(input);
     addLog("info", input + "\n"); // Echo input to terminal
   };
+
 
   // ===== File System Handlers =====
 
@@ -826,7 +878,7 @@ int main() {
     if (result.canceled || !result.filePath) return;
 
     const workspace = {
-      version: "1.4.4",
+      version: "1.4.5",
       name: "C-Studio Project",
       files: files,
     };
@@ -881,7 +933,28 @@ int main() {
         onImportWorkspace={handleImportWorkspace}
       />
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 flex-shrink-0">
+        {/* Sidebar collapse toggle */}
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="h-full w-8 flex items-center justify-center hover:bg-white/5 transition-colors flex-shrink-0"
+          style={{ backgroundColor: 'var(--theme-bg)', borderRight: '1px solid var(--theme-border)' }}
+          title={isSidebarCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
+        >
+          <svg
+            className={`w-4 h-4 transition-transform ${isSidebarCollapsed ? "rotate-180" : ""}`}
+            style={{ color: 'var(--theme-fg-muted)' }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Collapsible Sidebar */}
+        <div
+          className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isSidebarCollapsed ? "w-0" : "w-64"}`}
+        >
           <Sidebar
           files={files}
           activeFileId={activeFileId}
@@ -894,30 +967,60 @@ int main() {
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex-1 flex flex-col min-h-0">
-          {activeFile ? (
-            <MonacoEditor
-              activeFile={activeFile}
-              onContentChange={handleContentChange}
-              onRun={handleRun}
-              isCompiling={isCompiling}
-              markers={markers}
-              openTabs={openTabs}
-              files={files}
-              onTabClick={handleTabClick}
-              onTabClose={handleTabClose}
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              Select a file to edit
+      {/* Main Editor and Split Editor */}
+      <div className="flex-1 flex min-w-0">
+        {/* Primary Editor */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-h-0">
+            {activeFile ? (
+              <MonacoEditor
+                activeFile={activeFile}
+                onContentChange={handleContentChange}
+                onRun={handleRun}
+                isCompiling={isCompiling}
+                markers={markers}
+                openTabs={openTabs}
+                files={files}
+                onTabClick={handleTabClick}
+                onTabClose={handleTabClose}
+                onSplitRight={handleSplitRight}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
+                Select a file to edit
+              </div>
+            )}
+          </div>
+          <div className="h-1/3 flex-shrink-0">
+            <TerminalPanel logs={logs} onClear={() => setLogs([])} onInput={handleTerminalInput} />
+          </div>
+        </div>
+
+        {/* Split Editor (Right Pane) */}
+        {splitTabs.length > 0 && (
+          <div className="flex-1 flex flex-col min-w-0" style={{ borderLeft: '1px solid var(--theme-border)' }}>
+            <div className="flex-1 flex flex-col min-h-0">
+              {activeSplitFileId && findFile(files, activeSplitFileId) ? (
+                <MonacoEditor
+                  activeFile={findFile(files, activeSplitFileId)!}
+                  onContentChange={handleContentChange}
+                  onRun={handleRun}
+                  isCompiling={isCompiling}
+                  markers={markers}
+                  openTabs={splitTabs}
+                  files={files}
+                  onTabClick={handleSplitTabClick}
+                  onTabClose={handleSplitTabClose}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
+                  Select a file
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="h-1/3 flex-shrink-0">
-          <TerminalPanel logs={logs} onClear={() => setLogs([])} onInput={handleTerminalInput} />
-        </div>
-        </div>
+          </div>
+        )}
+      </div>
       </div>
 
       {/* Update notification popup */}

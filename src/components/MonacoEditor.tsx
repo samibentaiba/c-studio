@@ -25,6 +25,7 @@ interface MonacoEditorProps {
   files: FileSystemItem[];
   onTabClick: (fileId: string) => void;
   onTabClose: (fileId: string) => void;
+  onSplitRight?: (fileId: string) => void;
 }
 
 export function MonacoEditor({
@@ -37,6 +38,7 @@ export function MonacoEditor({
   files,
   onTabClick,
   onTabClose,
+  onSplitRight,
 }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -182,6 +184,7 @@ export function MonacoEditor({
         files={files}
         onTabClick={onTabClick}
         onTabClose={onTabClose}
+        onSplitRight={onSplitRight}
       />
       
       {/* Toolbar */}
