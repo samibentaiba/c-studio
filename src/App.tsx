@@ -147,6 +147,8 @@ END.`,
     return saved ? parseInt(saved, 10) : 256;
   });
   const [showOutputTab, setShowOutputTab] = useState(false);
+  const [terminalLogs, setTerminalLogs] = useState<LogMessage[]>([]);
+  const [showTerminalTab, setShowTerminalTab] = useState(false);
 
   // Recursive search for active file
   const findFile = (
@@ -167,6 +169,18 @@ END.`,
 
   const addLog = (type: LogType, content: string) => {
     setLogs((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        type,
+        content,
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  };
+
+  const addTerminalLog = (type: LogType, content: string) => {
+    setTerminalLogs((prev) => [
       ...prev,
       {
         id: Math.random().toString(36).substr(2, 9),
@@ -1035,17 +1049,24 @@ END.`,
     setActiveFileId("output");
 
     try {
+      // Log GCC command to terminal
+      addTerminalLog("info", "$ gcc -o program.exe *.c");
+      
       // Pass the entire tree structure to the backend
       const result = await window.electron.compileProject(files, activeFileId);
 
       if (result.success && result.exePath && result.cwd) {
+        addTerminalLog("success", "Compilation successful!");
+        addTerminalLog("info", `$ ./${result.exePath.split(/[\\/]/).pop()}`);
         addLog("success", "Build successful. Running...");
         window.electron.runProject(result.exePath, result.cwd);
       } else {
+        addTerminalLog("error", result.error || "Compilation failed");
         addLog("error", "Build failed:");
         addLog("error", result.error || "Unknown error");
       }
     } catch (e) {
+      addTerminalLog("error", "Error: " + String(e));
       addLog("error", "IPC Error: " + String(e));
     } finally {
       setIsCompiling(false);
@@ -1418,6 +1439,14 @@ END.`,
     }
   };
 
+  const handleOpenTerminal = () => {
+    setShowTerminalTab(true);
+    if (!openTabs.includes("terminal")) {
+      setOpenTabs((prev) => [...prev, "terminal"]);
+    }
+    setActiveFileId("terminal");
+  };
+
   return (
     <ThemeProvider>
       <div
@@ -1434,6 +1463,7 @@ END.`,
           onSaveFile={handleSave}
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
+          onOpenTerminal={handleOpenTerminal}
         />
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar collapse toggle */}
@@ -1516,6 +1546,26 @@ END.`,
                         logs={logs}
                         onClear={() => setLogs([])}
                         onInput={handleTerminalInput}
+                      />
+                    </div>
+                  </div>
+                ) : activeFileId === "terminal" ? (
+                  /* Terminal Tab Content - Shows GCC commands */
+                  <div className="h-full flex flex-col" style={{ backgroundColor: "var(--theme-bg-dark)" }}>
+                    <EditorTabs
+                      openTabs={openTabs}
+                      activeFileId={activeFileId}
+                      files={files}
+                      onTabClick={handleTabClick}
+                      onTabClose={handleTabClose}
+                      onSplitRight={handleSplitRight}
+                      showOutputTab={showOutputTab}
+                    />
+                    <div className="flex-1">
+                      <TerminalPanel
+                        logs={terminalLogs}
+                        onClear={() => setTerminalLogs([])}
+                        onInput={() => {}}
                       />
                     </div>
                   </div>

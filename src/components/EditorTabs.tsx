@@ -42,6 +42,9 @@ export function EditorTabs({
     if (tabId === "output") {
       return { name: "Output", icon: <Terminal size={14} /> };
     }
+    if (tabId === "terminal") {
+      return { name: "Terminal", icon: <Terminal size={14} /> };
+    }
     const file = findFile(files, tabId);
     if (!file) return null;
     return { name: file.name, icon: <FileCode size={14} /> };
@@ -91,7 +94,7 @@ export function EditorTabs({
             }}
             onContextMenu={(e) => {
               e.preventDefault();
-              if (onSplitRight && tabId !== "output") {
+              if (onSplitRight && tabId !== "output" && tabId !== "terminal") {
                 setContextMenu({ x: e.clientX, y: e.clientY, tabId });
               }
             }}

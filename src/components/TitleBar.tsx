@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme, appThemes } from "../ThemeContext";
-import { Palette } from "lucide-react";
+import { Palette, Terminal } from "lucide-react";
 
 interface MenuItem {
   label?: string;
@@ -135,17 +135,13 @@ function ThemeSelector() {
           {appThemes.map((t) => (
             <div
               key={t.id}
-              className="px-3 py-2 text-xs cursor-pointer flex items-center gap-2 transition-colors"
+              className="px-3 py-1.5 text-xs cursor-pointer flex items-center gap-2 transition-colors"
               style={{
-                color: themeId === t.id ? "#ffffff" : theme.ui.foreground,
+                color: theme.ui.foreground,
                 backgroundColor: themeId === t.id ? theme.ui.accent : "transparent",
               }}
-              onMouseEnter={(e) => {
-                if (themeId !== t.id) e.currentTarget.style.backgroundColor = theme.ui.backgroundLight;
-              }}
-              onMouseLeave={(e) => {
-                if (themeId !== t.id) e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.accent)}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = themeId === t.id ? theme.ui.accent : "transparent")}
               onClick={() => {
                 setTheme(t.id);
                 setIsOpen(false);
@@ -174,6 +170,7 @@ interface TitleBarProps {
   onSaveFile?: () => void;
   onExportWorkspace?: () => void;
   onImportWorkspace?: () => void;
+  onOpenTerminal?: () => void;
 }
 
 export function TitleBar({
@@ -183,6 +180,7 @@ export function TitleBar({
   onSaveFile,
   onExportWorkspace,
   onImportWorkspace,
+  onOpenTerminal,
 }: TitleBarProps) {
   const { theme } = useTheme();
 
@@ -208,7 +206,7 @@ export function TitleBar({
   ];
 
   const viewMenuItems: MenuItem[] = [
-    { label: "Toggle Terminal" },
+    { label: "Toggle Terminal", action: onOpenTerminal },
     { label: "Toggle Sidebar" },
   ];
 
@@ -243,6 +241,17 @@ export function TitleBar({
         C-Studio - v1.5.0
       </div>
       <div className="flex items-center gap-2 mr-2">
+        {/* Terminal Button */}
+        <div
+          className="px-2 py-1 text-xs cursor-pointer transition-colors rounded flex items-center gap-1"
+          style={{ color: theme.ui.foreground }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+          onClick={onOpenTerminal}
+        >
+          <Terminal size={12} />
+          Terminal
+        </div>
         <ThemeSelector />
       </div>
     </div>
