@@ -1459,24 +1459,26 @@ END.`,
 
           {/* Resizable Sidebar */}
           <div
-            className="flex-shrink-0 transition-all duration-200 overflow-hidden flex"
+            className="flex-shrink-0 transition-all duration-200 overflow-hidden relative"
             style={{ width: isSidebarCollapsed ? 0 : sidebarWidth }}
           >
-            <Sidebar
-              files={files}
-              activeFileId={activeFileId}
-              onFileSelect={handleFileSelect}
-              onFileCreate={handleFileCreate}
-              onDelete={handleDelete}
-              onToggleFolder={handleToggleFolder}
-              onMoveFile={handleMoveFile}
-              onGenerateTest={handleGenerateTest}
-              onRename={handleRename}
-            />
+            <div className="h-full" style={{ width: sidebarWidth - 4 }}>
+              <Sidebar
+                files={files}
+                activeFileId={activeFileId}
+                onFileSelect={handleFileSelect}
+                onFileCreate={handleFileCreate}
+                onDelete={handleDelete}
+                onToggleFolder={handleToggleFolder}
+                onMoveFile={handleMoveFile}
+                onGenerateTest={handleGenerateTest}
+                onRename={handleRename}
+              />
+            </div>
             {/* Resize handle */}
             {!isSidebarCollapsed && (
               <div
-                className="w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors"
+                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors"
                 style={{ backgroundColor: "var(--theme-border)" }}
                 onMouseDown={handleSidebarResize}
               />

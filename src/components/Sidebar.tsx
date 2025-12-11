@@ -257,7 +257,7 @@ export function Sidebar({
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full w-full flex flex-col"
       style={{
         backgroundColor: "var(--theme-bg)",
         borderRight: "1px solid var(--theme-border)",
