@@ -1,11 +1,15 @@
 import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
-import { Play } from "lucide-react";
+import { Play, ArrowRightLeft } from "lucide-react";
 import { Button } from "./ui/button";
 import { FileSystemItem } from "../types";
 import init, { format } from "@wasm-fmt/clang-format";
 import { useTheme } from "../ThemeContext";
 import { EditorTabs } from "./EditorTabs";
+import {
+  registerUSDBLanguage,
+  USDB_LANGUAGE_ID,
+} from "../usdb-compiler/usdb-language";
 
 interface Marker {
   file: string;
@@ -26,6 +30,7 @@ interface MonacoEditorProps {
   onTabClick: (fileId: string) => void;
   onTabClose: (fileId: string) => void;
   onSplitRight?: (fileId: string) => void;
+  onTranslate?: () => void;
 }
 
 export function MonacoEditor({
@@ -39,6 +44,7 @@ export function MonacoEditor({
   onTabClick,
   onTabClose,
   onSplitRight,
+  onTranslate,
 }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -53,14 +59,27 @@ export function MonacoEditor({
       base: "vs-dark",
       inherit: true,
       rules: [
-        { token: "comment", foreground: theme.syntax.comment.replace("#", ""), fontStyle: "italic" },
+        {
+          token: "comment",
+          foreground: theme.syntax.comment.replace("#", ""),
+          fontStyle: "italic",
+        },
         { token: "keyword", foreground: theme.syntax.keyword.replace("#", "") },
         { token: "string", foreground: theme.syntax.string.replace("#", "") },
         { token: "number", foreground: theme.syntax.number.replace("#", "") },
         { token: "type", foreground: theme.syntax.type.replace("#", "") },
-        { token: "function", foreground: theme.syntax.function.replace("#", "") },
-        { token: "variable", foreground: theme.syntax.variable.replace("#", "") },
-        { token: "operator", foreground: theme.syntax.operator.replace("#", "") },
+        {
+          token: "function",
+          foreground: theme.syntax.function.replace("#", ""),
+        },
+        {
+          token: "variable",
+          foreground: theme.syntax.variable.replace("#", ""),
+        },
+        {
+          token: "operator",
+          foreground: theme.syntax.operator.replace("#", ""),
+        },
       ],
       colors: {
         "editor.background": theme.editor.background,
@@ -72,6 +91,9 @@ export function MonacoEditor({
     });
 
     monaco.editor.setTheme("custom-theme");
+
+    // Register USDB Algo language
+    registerUSDBLanguage(monaco);
   };
 
   // Update theme when changed
@@ -82,14 +104,30 @@ export function MonacoEditor({
         base: "vs-dark",
         inherit: true,
         rules: [
-          { token: "comment", foreground: theme.syntax.comment.replace("#", ""), fontStyle: "italic" },
-          { token: "keyword", foreground: theme.syntax.keyword.replace("#", "") },
+          {
+            token: "comment",
+            foreground: theme.syntax.comment.replace("#", ""),
+            fontStyle: "italic",
+          },
+          {
+            token: "keyword",
+            foreground: theme.syntax.keyword.replace("#", ""),
+          },
           { token: "string", foreground: theme.syntax.string.replace("#", "") },
           { token: "number", foreground: theme.syntax.number.replace("#", "") },
           { token: "type", foreground: theme.syntax.type.replace("#", "") },
-          { token: "function", foreground: theme.syntax.function.replace("#", "") },
-          { token: "variable", foreground: theme.syntax.variable.replace("#", "") },
-          { token: "operator", foreground: theme.syntax.operator.replace("#", "") },
+          {
+            token: "function",
+            foreground: theme.syntax.function.replace("#", ""),
+          },
+          {
+            token: "variable",
+            foreground: theme.syntax.variable.replace("#", ""),
+          },
+          {
+            token: "operator",
+            foreground: theme.syntax.operator.replace("#", ""),
+          },
         ],
         colors: {
           "editor.background": theme.editor.background,
@@ -140,23 +178,30 @@ export function MonacoEditor({
       };
       initWasm();
 
-      const dispose = monaco.languages.registerDocumentFormattingEditProvider("c", {
-        provideDocumentFormattingEdits: async (model: any) => {
-          const text = model.getValue();
-          try {
-            const formatted = await format(text, "main.c", JSON.stringify({ BasedOnStyle: "Chromium", IndentWidth: 4 }));
-            return [
-              {
-                range: model.getFullModelRange(),
-                text: formatted,
-              },
-            ];
-          } catch (e) {
-            console.error("Formatting failed:", e);
-            return [];
-          }
-        },
-      });
+      const dispose = monaco.languages.registerDocumentFormattingEditProvider(
+        "c",
+        {
+          provideDocumentFormattingEdits: async (model: any) => {
+            const text = model.getValue();
+            try {
+              const formatted = await format(
+                text,
+                "main.c",
+                JSON.stringify({ BasedOnStyle: "Chromium", IndentWidth: 4 })
+              );
+              return [
+                {
+                  range: model.getFullModelRange(),
+                  text: formatted,
+                },
+              ];
+            } catch (e) {
+              console.error("Formatting failed:", e);
+              return [];
+            }
+          },
+        }
+      );
 
       return () => dispose.dispose();
     }
@@ -167,6 +212,7 @@ export function MonacoEditor({
   };
 
   const getLanguage = (filename: string) => {
+    if (filename.endsWith(".algo")) return USDB_LANGUAGE_ID;
     if (filename.endsWith(".c") || filename.endsWith(".h")) return "c";
     if (filename.endsWith(".cpp")) return "cpp";
     if (filename.endsWith(".json")) return "json";
@@ -176,7 +222,10 @@ export function MonacoEditor({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0" style={{ backgroundColor: theme.editor.background }}>
+    <div
+      className="flex-1 flex flex-col min-w-0"
+      style={{ backgroundColor: theme.editor.background }}
+    >
       {/* Tab bar */}
       <EditorTabs
         openTabs={openTabs}
@@ -186,7 +235,7 @@ export function MonacoEditor({
         onTabClose={onTabClose}
         onSplitRight={onSplitRight}
       />
-      
+
       {/* Toolbar */}
       <div
         className="h-10 flex items-center justify-end px-4"
@@ -204,10 +253,27 @@ export function MonacoEditor({
           >
             Format
           </Button>
+          {onTranslate &&
+            (activeFile.name.endsWith(".algo") ||
+              activeFile.name.endsWith(".c")) && (
+              <Button
+                onClick={onTranslate}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                <ArrowRightLeft size={14} className="mr-1" />
+                {activeFile.name.endsWith(".algo") ? "To C" : "To Algo"}
+              </Button>
+            )}
           <Button
             onClick={onRun}
             disabled={isCompiling}
-            className={isCompiling ? "bg-muted text-muted-foreground" : "bg-green-600 hover:bg-green-700 text-white"}
+            className={
+              isCompiling
+                ? "bg-muted text-muted-foreground"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }
             size="sm"
           >
             {isCompiling ? (

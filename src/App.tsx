@@ -6,6 +6,60 @@ import { TitleBar } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ThemeProvider } from "./ThemeContext";
 import { FileSystemItem, LogMessage, LogType } from "./types";
+// Import modules directly (barrel export from index.ts causes crash)
+import { translateCToAlgo } from "./usdb-compiler/c-to-algo";
+import { Parser } from "./usdb-compiler/parser";
+import { SemanticAnalyzer } from "./usdb-compiler/semantic";
+import { CodeGenerator } from "./usdb-compiler/codegen";
+
+// Local compile function (bypasses index.ts barrel exports)
+const translateAlgoToC = (source: string) => {
+  // Phase 1: Parse
+  const parser = new Parser();
+  const { ast, errors: parseErrors } = parser.parse(source);
+
+  if (parseErrors.length > 0 || !ast) {
+    return {
+      success: false as const,
+      cCode: undefined as undefined,
+      errors:
+        parseErrors.length > 0
+          ? parseErrors
+          : [{ toString: () => "Parse failed" }],
+      warnings: [] as { toString: () => string }[],
+    };
+  }
+
+  // Phase 2: Semantic Analysis
+  const semanticAnalyzer = new SemanticAnalyzer();
+  const { errors: semanticErrors } = semanticAnalyzer.analyze(ast);
+  const errors = semanticErrors.filter((e) => e.severity !== "warning");
+  const warnings = semanticErrors.filter((e) => e.severity === "warning");
+
+  if (errors.length > 0) {
+    return { success: false as const, cCode: undefined, errors, warnings };
+  }
+
+  // Phase 3: Code Generation
+  const codeGenerator = new CodeGenerator();
+  const { code, errors: codeGenErrors } = codeGenerator.generate(ast);
+
+  if (codeGenErrors.length > 0) {
+    return {
+      success: false as const,
+      cCode: undefined,
+      errors: codeGenErrors,
+      warnings,
+    };
+  }
+
+  return {
+    success: true as const,
+    cCode: code,
+    errors: [] as { toString: () => string }[],
+    warnings,
+  };
+};
 
 // Helper to flatten tree for compiler (temporary until backend supports tree)
 // Actually, we will send the tree to backend, but for now let's keep it simple
@@ -48,6 +102,28 @@ export default function CCodeStudio() {
       type: "file",
       content: `#include <stdio.h>\n#include "utils.h"\n\nvoid print_message() {\n    printf("Hello from bundled GCC!\\n");\n}`,
     },
+    {
+      id: "4",
+      name: "factorial.algo",
+      type: "file",
+      content: `ALGORITHM Factorial
+VAR n, result : INTEGER
+
+FUNCTION Fact(x : INTEGER) : INTEGER
+BEGIN
+    IF (x = 0) THEN
+        RETURN(1)
+    ELSE
+        RETURN(x * Fact(x - 1))
+END
+
+BEGIN
+    PRINT("Enter a number:")
+    SCAN(n)
+    result <- Fact(n)
+    PRINT("Factorial is:", result)
+END.`,
+    },
   ]);
 
   const [activeFileId, setActiveFileId] = useState<string | null>("1");
@@ -56,13 +132,18 @@ export default function CCodeStudio() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [openTabs, setOpenTabs] = useState<string[]>(["1"]); // Track open tabs
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
+
   // Split editor state
   const [splitTabs, setSplitTabs] = useState<string[]>([]); // Tabs for second pane
-  const [activeSplitFileId, setActiveSplitFileId] = useState<string | null>(null);
+  const [activeSplitFileId, setActiveSplitFileId] = useState<string | null>(
+    null
+  );
 
   // Recursive search for active file
-  const findFile = (items: FileSystemItem[], id: string): FileSystemItem | null => {
+  const findFile = (
+    items: FileSystemItem[],
+    id: string
+  ): FileSystemItem | null => {
     for (const item of items) {
       if (item.id === id) return item;
       if (item.children) {
@@ -87,7 +168,11 @@ export default function CCodeStudio() {
     ]);
   };
 
-  const handleFileCreate = (name: string, type: "file" | "folder", parentId?: string) => {
+  const handleFileCreate = (
+    name: string,
+    type: "file" | "folder",
+    parentId?: string
+  ) => {
     const newItem: FileSystemItem = {
       id: Math.random().toString(36).substr(2, 9),
       name,
@@ -103,7 +188,11 @@ export default function CCodeStudio() {
       const updateChildren = (items: FileSystemItem[]): FileSystemItem[] => {
         return items.map((item) => {
           if (item.id === parentId) {
-            return { ...item, children: [...(item.children || []), newItem], isOpen: true };
+            return {
+              ...item,
+              children: [...(item.children || []), newItem],
+              isOpen: true,
+            };
           }
           if (item.children) {
             return { ...item, children: updateChildren(item.children) };
@@ -113,20 +202,24 @@ export default function CCodeStudio() {
       };
       setFiles(updateChildren(files));
     }
-    
+
     if (type === "file") {
       setActiveFileId(newItem.id);
       // Add to open tabs if not already there
-      setOpenTabs((prev) => prev.includes(newItem.id) ? prev : [...prev, newItem.id]);
+      setOpenTabs((prev) =>
+        prev.includes(newItem.id) ? prev : [...prev, newItem.id]
+      );
     }
   };
 
   const handleDelete = (id: string) => {
     const deleteFromTree = (items: FileSystemItem[]): FileSystemItem[] => {
-      return items.filter((item) => item.id !== id).map((item) => ({
-        ...item,
-        children: item.children ? deleteFromTree(item.children) : undefined,
-      }));
+      return items
+        .filter((item) => item.id !== id)
+        .map((item) => ({
+          ...item,
+          children: item.children ? deleteFromTree(item.children) : undefined,
+        }));
     };
     setFiles(deleteFromTree(files));
     if (activeFileId === id) setActiveFileId(null);
@@ -153,7 +246,10 @@ export default function CCodeStudio() {
     if (sourceId === targetId) return;
 
     // Helper to find item
-    const findItem = (items: FileSystemItem[], id: string): FileSystemItem | null => {
+    const findItem = (
+      items: FileSystemItem[],
+      id: string
+    ): FileSystemItem | null => {
       for (const item of items) {
         if (item.id === id) return item;
         if (item.children) {
@@ -169,7 +265,10 @@ export default function CCodeStudio() {
 
     // Check if target is a descendant of source (prevent circular move)
     if (targetId) {
-      const isDescendant = (parent: FileSystemItem, target: string): boolean => {
+      const isDescendant = (
+        parent: FileSystemItem,
+        target: string
+      ): boolean => {
         if (!parent.children) return false;
         for (const child of parent.children) {
           if (child.id === target) return true;
@@ -217,7 +316,20 @@ export default function CCodeStudio() {
     setFiles(newFiles);
   };
 
-  const handleGenerateTest = (type: "multi-main" | "nested" | "assets" | "complex-nested" | "multi-input" | "pointers") => {
+  const handleGenerateTest = (
+    type:
+      | "multi-main"
+      | "nested"
+      | "assets"
+      | "complex-nested"
+      | "multi-input"
+      | "pointers"
+      | "algo-factorial"
+      | "algo-array-sum"
+      | "algo-quadratic"
+      | "algo-struct"
+      | "algo-loops"
+  ) => {
     const newId = () => Math.random().toString(36).substr(2, 9);
     const rootId = newId();
 
@@ -573,8 +685,7 @@ int main() {
           },
         ],
       };
-    } else {
-      // assets
+    } else if (type === "assets") {
       newFolder = {
         id: rootId,
         name: "Test_Assets",
@@ -592,6 +703,225 @@ int main() {
             name: "main.c",
             type: "file",
             content: `#include <stdio.h>\n\nint main() {\n    FILE *f = fopen("data.txt", "r");\n    if (f) {\n        char buffer[100];\n        fgets(buffer, 100, f);\n        printf("Read: %s\\n", buffer);\n        fclose(f);\n    } else {\n        printf("Failed to open file.\\n");\n    }\n    return 0;\n}`,
+          },
+        ],
+      };
+    } else if (type === "algo-factorial") {
+      // USDB Algo: Factorial
+      newFolder = {
+        id: rootId,
+        name: "Algo_Factorial",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "factorial.algo",
+            type: "file",
+            content: `ALGORITHM Factorial
+VAR n, result : INTEGER
+
+FUNCTION Fact(x : INTEGER) : INTEGER
+BEGIN
+    IF (x <= 1) THEN
+        RETURN(1)
+    ELSE
+        RETURN(x * Fact(x - 1))
+END
+
+BEGIN
+    PRINT("=== Factorial Calculator ===")
+    PRINT("Enter a number:")
+    SCAN(n)
+    result <- Fact(n)
+    PRINT("Factorial of", n, "is", result)
+END.`,
+          },
+        ],
+      };
+    } else if (type === "algo-array-sum") {
+      // USDB Algo: Array Sum
+      newFolder = {
+        id: rootId,
+        name: "Algo_ArraySum",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "array_sum.algo",
+            type: "file",
+            content: `ALGORITHM ArraySum
+CONST SIZE = 5
+VAR T : ARRAY[SIZE] OF INTEGER
+VAR i, sum : INTEGER
+
+BEGIN
+    PRINT("=== Array Sum Calculator ===")
+    PRINT("Enter", SIZE, "numbers:")
+    
+    sum <- 0
+    FOR i <- 0 TO SIZE - 1 DO
+    BEGIN
+        SCAN(T[i])
+        sum <- sum + T[i]
+    END
+    
+    PRINT("Numbers entered:")
+    FOR i <- 0 TO SIZE - 1 DO
+        PRINT(T[i])
+    
+    PRINT("Sum =", sum)
+    PRINT("Average =", sum / SIZE)
+END.`,
+          },
+        ],
+      };
+    } else if (type === "algo-quadratic") {
+      // USDB Algo: Quadratic Equation
+      newFolder = {
+        id: rootId,
+        name: "Algo_Quadratic",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "quadratic.algo",
+            type: "file",
+            content: `ALGORITHM QuadraticEquation
+VAR a, b, c : REAL
+VAR delta, x1, x2 : REAL
+
+BEGIN
+    PRINT("=== Quadratic Equation Solver ===")
+    PRINT("Equation: ax^2 + bx + c = 0")
+    PRINT("Enter coefficient a:")
+    SCAN(a)
+    PRINT("Enter coefficient b:")
+    SCAN(b)
+    PRINT("Enter coefficient c:")
+    SCAN(c)
+    
+    delta <- b * b - 4 * a * c
+    
+    IF (delta > 0) THEN
+    BEGIN
+        x1 <- (-b + sqrt(delta)) / (2 * a)
+        x2 <- (-b - sqrt(delta)) / (2 * a)
+        PRINT("Two real solutions:")
+        PRINT("x1 =", x1)
+        PRINT("x2 =", x2)
+    END
+    ELSE IF (delta = 0) THEN
+    BEGIN
+        x1 <- -b / (2 * a)
+        PRINT("One solution:")
+        PRINT("x =", x1)
+    END
+    ELSE
+        PRINT("No real solutions (delta < 0)")
+END.`,
+          },
+        ],
+      };
+    } else if (type === "algo-struct") {
+      // USDB Algo: Structures Test
+      newFolder = {
+        id: rootId,
+        name: "Algo_Structures",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "structures.algo",
+            type: "file",
+            content: `ALGORITHM StructuresTest
+TYPE
+    Date = STRUCTURE
+    BEGIN
+        D : INTEGER
+        M : INTEGER
+        Y : INTEGER
+    END
+    
+    Student = STRUCTURE
+    BEGIN
+        ID : INTEGER
+        Name : STRING
+        BirthDate : Date
+        Average : REAL
+    END
+
+VAR
+    S1 : Student
+
+BEGIN
+    PRINT("=== USDB Algo Structures Test ===")
+    
+    // Assign values
+    S1.ID <- 2023001
+    S1.Name <- "Ahmed"
+    S1.BirthDate.D <- 15
+    S1.BirthDate.M <- 5
+    S1.BirthDate.Y <- 2000
+    S1.Average <- 14.75
+    
+    // Print the structure
+    PRINT("Student ID:", S1.ID)
+    PRINT("Name:", S1.Name)
+    PRINT("Birth Date:", S1.BirthDate.D, "/", S1.BirthDate.M, "/", S1.BirthDate.Y)
+    PRINT("Average:", S1.Average)
+END.`,
+          },
+        ],
+      };
+    } else if (type === "algo-loops") {
+      // USDB Algo: Loops Test
+      newFolder = {
+        id: rootId,
+        name: "Algo_Loops",
+        type: "folder",
+        isOpen: true,
+        children: [
+          {
+            id: newId(),
+            name: "loops.algo",
+            type: "file",
+            content: `ALGORITHM LoopsTest
+VAR
+    i, sum : INTEGER
+
+BEGIN
+    PRINT("=== USDB Algo Loops Test ===")
+    
+    // FOR Loop
+    PRINT("--- FOR Loop (1 to 5) ---")
+    FOR i <- 1 TO 5 DO
+        PRINT("i =", i)
+    
+    // FOR with STEP
+    PRINT("--- FOR Loop with STEP 2 (0 to 10) ---")
+    FOR i <- 0 TO 10 STEP 2 DO
+        PRINT("i =", i)
+    
+    // WHILE Loop
+    PRINT("--- WHILE Loop (countdown) ---")
+    i <- 5
+    WHILE (i > 0) DO
+    BEGIN
+        PRINT("Countdown:", i)
+        i <- i - 1
+    END
+    
+    // Calculate sum with FOR
+    sum <- 0
+    FOR i <- 1 TO 10 DO
+        sum <- sum + i
+    
+    PRINT("Sum of 1 to 10 =", sum)
+END.`,
           },
         ],
       };
@@ -616,7 +946,15 @@ int main() {
     setFiles(updateContent(files));
   };
 
-  const [markers, setMarkers] = useState<{ file: string; line: number; column: number; message: string; severity: "error" | "warning" }[]>([]);
+  const [markers, setMarkers] = useState<
+    {
+      file: string;
+      line: number;
+      column: number;
+      message: string;
+      severity: "error" | "warning";
+    }[]
+  >([]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -683,6 +1021,83 @@ int main() {
     }
   };
 
+  // Translate handler
+  const handleTranslate = () => {
+    const file = findFile(files, activeFileId || "");
+    if (!file || !file.content) {
+      addLog("error", "No file selected to translate");
+      return;
+    }
+
+    const newId = Math.random().toString(36).substr(2, 9);
+    let newName: string;
+    let newContent: string;
+
+    if (file.name.endsWith(".algo")) {
+      // Algo to C - validates syntax before translating
+      const result = translateAlgoToC(file.content);
+      if (result.success && result.cCode) {
+        // Use _translated suffix to avoid duplicate symbol errors
+        const baseName = file.name.replace(/\.algo$/i, "");
+        newName = `${baseName}_translated.c`;
+        newContent = result.cCode;
+        addLog("success", `Translated ${file.name} to ${newName}`);
+      } else {
+        addLog("error", "Cannot translate - code has errors:");
+        for (const err of result.errors) {
+          addLog("error", err.toString());
+        }
+        return;
+      }
+    } else if (file.name.endsWith(".c")) {
+      // C to Algo (best effort - limited subset of C)
+      // Build workspace file map for include resolution
+      const workspaceFiles = new Map<string, string>();
+      const collectFiles = (items: FileSystemItem[], prefix = "") => {
+        for (const item of items) {
+          if (item.type === "file" && item.content) {
+            const path = prefix ? `${prefix}/${item.name}` : item.name;
+            workspaceFiles.set(path, item.content);
+            workspaceFiles.set(item.name, item.content); // Also store by basename
+          } else if (item.type === "folder" && item.children) {
+            collectFiles(
+              item.children,
+              prefix ? `${prefix}/${item.name}` : item.name
+            );
+          }
+        }
+      };
+      collectFiles(files);
+
+      const result = translateCToAlgo(file.content, workspaceFiles);
+      const baseName = file.name.replace(/\.c$/i, "");
+      newName = `${baseName}_translated.algo`;
+      newContent = result.algoCode;
+
+      if (result.warnings.length > 0) {
+        addLog("warning", "Translation warnings:");
+        for (const w of result.warnings) {
+          addLog("warning", w);
+        }
+      }
+      addLog("success", `Translated ${file.name} to Algo`);
+    } else {
+      addLog("error", "Can only translate .algo or .c files");
+      return;
+    }
+
+    const newFile: FileSystemItem = {
+      id: newId,
+      name: newName,
+      type: "file",
+      content: newContent,
+    };
+
+    setFiles([...files, newFile]);
+    setOpenTabs((prev) => [...prev, newId]);
+    setActiveFileId(newId);
+  };
+
   // Tab handlers
   const handleFileSelect = (file: FileSystemItem) => {
     setActiveFileId(file.id);
@@ -700,7 +1115,7 @@ int main() {
     const tabIndex = openTabs.indexOf(fileId);
     const newTabs = openTabs.filter((id) => id !== fileId);
     setOpenTabs(newTabs);
-    
+
     // If closing active tab, switch to another tab
     if (activeFileId === fileId) {
       if (newTabs.length > 0) {
@@ -736,7 +1151,7 @@ int main() {
     const tabIndex = splitTabs.indexOf(fileId);
     const newTabs = splitTabs.filter((id) => id !== fileId);
     setSplitTabs(newTabs);
-    
+
     if (activeSplitFileId === fileId) {
       if (newTabs.length > 0) {
         const newIndex = Math.min(tabIndex, newTabs.length - 1);
@@ -764,7 +1179,6 @@ int main() {
     addLog("info", input + "\n"); // Echo input to terminal
   };
 
-
   // ===== File System Handlers =====
 
   const handleNewFile = () => {
@@ -775,6 +1189,7 @@ int main() {
     const result = await window.electron.showOpenDialog({
       title: "Open File",
       filters: [
+        { name: "USDB Algo Files", extensions: ["algo"] },
         { name: "C Files", extensions: ["c", "h"] },
         { name: "Text Files", extensions: ["txt"] },
         { name: "All Files", extensions: ["*"] },
@@ -816,13 +1231,29 @@ int main() {
 
     if (folderResult.success) {
       // Convert folder result to FileSystemItem format
-      const convertToFileSystemItem = (items: { name: string; type: "file" | "folder"; content?: string; children?: unknown[] }[]): FileSystemItem[] => {
+      const convertToFileSystemItem = (
+        items: {
+          name: string;
+          type: "file" | "folder";
+          content?: string;
+          children?: unknown[];
+        }[]
+      ): FileSystemItem[] => {
         return items.map((item) => ({
           id: Math.random().toString(36).substr(2, 9),
           name: item.name,
           type: item.type,
           content: item.content,
-          children: item.children ? convertToFileSystemItem(item.children as { name: string; type: "file" | "folder"; content?: string; children?: unknown[] }[]) : undefined,
+          children: item.children
+            ? convertToFileSystemItem(
+                item.children as {
+                  name: string;
+                  type: "file" | "folder";
+                  content?: string;
+                  children?: unknown[];
+                }[]
+              )
+            : undefined,
           isOpen: true,
         }));
       };
@@ -859,7 +1290,10 @@ int main() {
 
     if (result.canceled || !result.filePath) return;
 
-    const saveResult = await window.electron.saveFile(result.filePath, activeFile.content || "");
+    const saveResult = await window.electron.saveFile(
+      result.filePath,
+      activeFile.content || ""
+    );
 
     if (saveResult.success) {
       addLog("success", `Saved: ${result.filePath}`);
@@ -883,7 +1317,10 @@ int main() {
       files: files,
     };
 
-    const saveResult = await window.electron.saveFile(result.filePath, JSON.stringify(workspace, null, 2));
+    const saveResult = await window.electron.saveFile(
+      result.filePath,
+      JSON.stringify(workspace, null, 2)
+    );
 
     if (saveResult.success) {
       addLog("success", `Workspace exported to: ${result.filePath}`);
@@ -909,7 +1346,10 @@ int main() {
         if (workspace.files && Array.isArray(workspace.files)) {
           setFiles(workspace.files);
           setActiveFileId(null);
-          addLog("success", `Workspace imported: ${workspace.name || "Unnamed"}`);
+          addLog(
+            "success",
+            `Workspace imported: ${workspace.name || "Unnamed"}`
+          );
         } else {
           addLog("error", "Invalid workspace file format");
         }
@@ -923,114 +1363,146 @@ int main() {
 
   return (
     <ThemeProvider>
-    <div className="flex flex-col h-screen w-full font-sans overflow-hidden" style={{ backgroundColor: 'var(--theme-bg-dark)', color: 'var(--theme-fg)' }}>
-      <TitleBar
-        onNewFile={handleNewFile}
-        onOpenFile={handleOpenFile}
-        onOpenFolder={handleOpenFolder}
-        onSaveFile={handleSave}
-        onExportWorkspace={handleExportWorkspace}
-        onImportWorkspace={handleImportWorkspace}
-      />
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar collapse toggle */}
-        <button
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="h-full w-8 flex items-center justify-center hover:bg-white/5 transition-colors flex-shrink-0"
-          style={{ backgroundColor: 'var(--theme-bg)', borderRight: '1px solid var(--theme-border)' }}
-          title={isSidebarCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
-        >
-          <svg
-            className={`w-4 h-4 transition-transform ${isSidebarCollapsed ? "rotate-180" : ""}`}
-            style={{ color: 'var(--theme-fg-muted)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {/* Collapsible Sidebar */}
-        <div
-          className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isSidebarCollapsed ? "w-0" : "w-64"}`}
-        >
-          <Sidebar
-          files={files}
-          activeFileId={activeFileId}
-          onFileSelect={handleFileSelect}
-          onFileCreate={handleFileCreate}
-          onDelete={handleDelete}
-          onToggleFolder={handleToggleFolder}
-          onMoveFile={handleMoveFile}
-          onGenerateTest={handleGenerateTest}
+      <div
+        className="flex flex-col h-screen w-full font-sans overflow-hidden"
+        style={{
+          backgroundColor: "var(--theme-bg-dark)",
+          color: "var(--theme-fg)",
+        }}
+      >
+        <TitleBar
+          onNewFile={handleNewFile}
+          onOpenFile={handleOpenFile}
+          onOpenFolder={handleOpenFolder}
+          onSaveFile={handleSave}
+          onExportWorkspace={handleExportWorkspace}
+          onImportWorkspace={handleImportWorkspace}
         />
-      </div>
-
-      {/* Main Editor and Split Editor */}
-      <div className="flex-1 flex min-w-0">
-        {/* Primary Editor */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 flex flex-col min-h-0">
-            {activeFile ? (
-              <MonacoEditor
-                activeFile={activeFile}
-                onContentChange={handleContentChange}
-                onRun={handleRun}
-                isCompiling={isCompiling}
-                markers={markers}
-                openTabs={openTabs}
-                files={files}
-                onTabClick={handleTabClick}
-                onTabClose={handleTabClose}
-                onSplitRight={handleSplitRight}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar collapse toggle */}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="h-full w-8 flex items-center justify-center hover:bg-white/5 transition-colors flex-shrink-0"
+            style={{
+              backgroundColor: "var(--theme-bg)",
+              borderRight: "1px solid var(--theme-border)",
+            }}
+            title={
+              isSidebarCollapsed
+                ? "Expand Sidebar (Ctrl+B)"
+                : "Collapse Sidebar (Ctrl+B)"
+            }
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${isSidebarCollapsed ? "rotate-180" : ""}`}
+              style={{ color: "var(--theme-fg-muted)" }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
               />
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
-                Select a file to edit
+            </svg>
+          </button>
+
+          {/* Collapsible Sidebar */}
+          <div
+            className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isSidebarCollapsed ? "w-0" : "w-64"}`}
+          >
+            <Sidebar
+              files={files}
+              activeFileId={activeFileId}
+              onFileSelect={handleFileSelect}
+              onFileCreate={handleFileCreate}
+              onDelete={handleDelete}
+              onToggleFolder={handleToggleFolder}
+              onMoveFile={handleMoveFile}
+              onGenerateTest={handleGenerateTest}
+            />
+          </div>
+
+          {/* Main Editor and Split Editor */}
+          <div className="flex-1 flex min-w-0">
+            {/* Primary Editor */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 flex flex-col min-h-0">
+                {activeFile ? (
+                  <MonacoEditor
+                    activeFile={activeFile}
+                    onContentChange={handleContentChange}
+                    onRun={handleRun}
+                    isCompiling={isCompiling}
+                    markers={markers}
+                    openTabs={openTabs}
+                    files={files}
+                    onTabClick={handleTabClick}
+                    onTabClose={handleTabClose}
+                    onSplitRight={handleSplitRight}
+                    onTranslate={handleTranslate}
+                  />
+                ) : (
+                  <div
+                    className="flex-1 flex items-center justify-center text-muted-foreground"
+                    style={{ backgroundColor: "var(--theme-bg-dark)" }}
+                  >
+                    Select a file to edit
+                  </div>
+                )}
+              </div>
+              <div className="h-1/3 flex-shrink-0">
+                <TerminalPanel
+                  logs={logs}
+                  onClear={() => setLogs([])}
+                  onInput={handleTerminalInput}
+                />
+              </div>
+            </div>
+
+            {/* Split Editor (Right Pane) */}
+            {splitTabs.length > 0 && (
+              <div
+                className="flex-1 flex flex-col min-w-0"
+                style={{ borderLeft: "1px solid var(--theme-border)" }}
+              >
+                <div className="flex-1 flex flex-col min-h-0">
+                  {activeSplitFileId && findFile(files, activeSplitFileId) ? (
+                    <MonacoEditor
+                      activeFile={findFile(files, activeSplitFileId)!}
+                      onContentChange={handleContentChange}
+                      onRun={handleRun}
+                      isCompiling={isCompiling}
+                      markers={markers}
+                      openTabs={splitTabs}
+                      files={files}
+                      onTabClick={handleSplitTabClick}
+                      onTabClose={handleSplitTabClose}
+                    />
+                  ) : (
+                    <div
+                      className="flex-1 flex items-center justify-center text-muted-foreground"
+                      style={{ backgroundColor: "var(--theme-bg-dark)" }}
+                    >
+                      Select a file
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-          <div className="h-1/3 flex-shrink-0">
-            <TerminalPanel logs={logs} onClear={() => setLogs([])} onInput={handleTerminalInput} />
-          </div>
         </div>
 
-        {/* Split Editor (Right Pane) */}
-        {splitTabs.length > 0 && (
-          <div className="flex-1 flex flex-col min-w-0" style={{ borderLeft: '1px solid var(--theme-border)' }}>
-            <div className="flex-1 flex flex-col min-h-0">
-              {activeSplitFileId && findFile(files, activeSplitFileId) ? (
-                <MonacoEditor
-                  activeFile={findFile(files, activeSplitFileId)!}
-                  onContentChange={handleContentChange}
-                  onRun={handleRun}
-                  isCompiling={isCompiling}
-                  markers={markers}
-                  openTabs={splitTabs}
-                  files={files}
-                  onTabClick={handleSplitTabClick}
-                  onTabClose={handleSplitTabClose}
-                />
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground" style={{ backgroundColor: 'var(--theme-bg-dark)' }}>
-                  Select a file
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Update notification popup */}
+        {updateInfo && (
+          <UpdateNotification
+            updateInfo={updateInfo}
+            onDismiss={() => setUpdateInfo(null)}
+          />
         )}
       </div>
-      </div>
-
-      {/* Update notification popup */}
-      {updateInfo && (
-        <UpdateNotification
-          updateInfo={updateInfo}
-          onDismiss={() => setUpdateInfo(null)}
-        />
-      )}
-    </div>
     </ThemeProvider>
   );
 }

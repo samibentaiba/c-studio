@@ -1,0 +1,5 @@
+// Test 1.1: Basic Hello World
+ALGORITHM HelloWorld
+BEGIN
+    PRINT("Hello, World!")
+END.

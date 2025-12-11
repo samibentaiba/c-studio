@@ -1,0 +1,16 @@
+// Test 4.2: Structures
+ALGORITHM StructTest
+TYPE
+    Point = STRUCTURE
+    BEGIN
+        x : REAL
+        y : REAL
+    END
+VAR
+    p1 : Point
+BEGIN
+    p1.x <- 5.5
+    p1.y <- 10.2
+    PRINT("Point x:", p1.x)
+    PRINT("Point y:", p1.y)
+END.

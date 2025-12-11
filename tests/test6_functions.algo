@@ -1,0 +1,16 @@
+// Test 5.1: Functions
+ALGORITHM FuncTest
+VAR res : INTEGER
+
+FUNCTION Square(n : INTEGER) : INTEGER
+BEGIN
+    RETURN(n * n)
+END
+
+BEGIN
+    res <- Square(5)
+    PRINT("5 squared is:", res)
+    
+    res <- Square(7)
+    PRINT("7 squared is:", res)
+END.

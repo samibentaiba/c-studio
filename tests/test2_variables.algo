@@ -1,0 +1,20 @@
+// Test 1.2: Variable Declarations & Types
+ALGORITHM VarTypes
+VAR
+    i, j : INTEGER
+    x, y : REAL
+    flag : BOOLEAN
+    letter : CHAR
+    name : STRING
+BEGIN
+    i <- 10
+    x <- 3.14
+    flag <- TRUE
+    letter <- 'A'
+    name <- "USDB"
+    PRINT("i =", i)
+    PRINT("x =", x)
+    PRINT("flag =", flag)
+    PRINT("letter =", letter)
+    PRINT("name =", name)
+END.

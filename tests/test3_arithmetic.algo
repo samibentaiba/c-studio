@@ -1,0 +1,25 @@
+// Test 2.1: Arithmetic Operators
+ALGORITHM Arithmetic
+VAR 
+    a, b, res : INTEGER
+    f1, f2 : REAL
+BEGIN
+    a <- 10
+    b <- 3
+    
+    res <- a + b * 2
+    PRINT("10 + 3 * 2 =", res)
+    
+    res <- (a + b) * 2
+    PRINT("(10 + 3) * 2 =", res)
+    
+    res <- a DIV b
+    PRINT("10 DIV 3 =", res)
+    
+    res <- a MOD b
+    PRINT("10 MOD 3 =", res)
+    
+    f1 <- 2.0
+    f2 <- f1 ^ 3
+    PRINT("2^3 =", f2)
+END.

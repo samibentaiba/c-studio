@@ -19,11 +19,28 @@ interface SidebarProps {
   files: FileSystemItem[];
   activeFileId: string | null;
   onFileSelect: (file: FileSystemItem) => void;
-  onFileCreate: (name: string, type: "file" | "folder", parentId?: string) => void;
+  onFileCreate: (
+    name: string,
+    type: "file" | "folder",
+    parentId?: string
+  ) => void;
   onDelete: (id: string) => void;
   onToggleFolder: (id: string) => void;
   onMoveFile: (sourceId: string, targetId: string | null) => void;
-  onGenerateTest: (type: "multi-main" | "nested" | "assets" | "complex-nested" | "multi-input" | "pointers") => void;
+  onGenerateTest: (
+    type:
+      | "multi-main"
+      | "nested"
+      | "assets"
+      | "complex-nested"
+      | "multi-input"
+      | "pointers"
+      | "algo-factorial"
+      | "algo-array-sum"
+      | "algo-quadratic"
+      | "algo-struct"
+      | "algo-loops"
+  ) => void;
 }
 
 export function Sidebar({
@@ -113,11 +130,14 @@ export function Sidebar({
                 )}
               </>
             ) : (
-              <FileCode size={16} className="text-current opacity-70 group-hover:opacity-100" />
+              <FileCode
+                size={16}
+                className="text-current opacity-70 group-hover:opacity-100"
+              />
             )}
             <span className="text-sm truncate">{item.name}</span>
           </div>
-          
+
           <div className="flex items-center opacity-0 group-hover:opacity-100">
             {item.type === "folder" && (
               <>
@@ -199,8 +219,8 @@ export function Sidebar({
     <div
       className="h-full flex flex-col"
       style={{
-        backgroundColor: 'var(--theme-bg)',
-        borderRight: '1px solid var(--theme-border)',
+        backgroundColor: "var(--theme-bg)",
+        borderRight: "1px solid var(--theme-border)",
       }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
@@ -260,8 +280,10 @@ export function Sidebar({
         {renderTree(files)}
       </ScrollArea>
       <div className="p-4 border-t border-white/10">
-        <h3 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Test Scenarios</h3>
-        <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">
+          C Language
+        </h3>
+        <div className="flex flex-col gap-1 mb-3">
           <Button
             variant="outline"
             size="sm"
@@ -293,28 +315,61 @@ export function Sidebar({
             variant="outline"
             size="sm"
             className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
-            onClick={() => onGenerateTest("complex-nested")}
-          >
-            <div className="w-2 h-2 rounded-full bg-orange-500 mr-2" />
-            Complex Nested
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
-            onClick={() => onGenerateTest("multi-input")}
-          >
-            <div className="w-2 h-2 rounded-full bg-cyan-500 mr-2" />
-            Multi-Input
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
             onClick={() => onGenerateTest("pointers")}
           >
             <div className="w-2 h-2 rounded-full bg-red-500 mr-2" />
             Pointers & Libraries
+          </Button>
+        </div>
+
+        <h3 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">
+          USDB Algo
+        </h3>
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("algo-factorial")}
+          >
+            <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2" />
+            Factorial
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("algo-array-sum")}
+          >
+            <div className="w-2 h-2 rounded-full bg-teal-500 mr-2" />
+            Array Sum
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("algo-quadratic")}
+          >
+            <div className="w-2 h-2 rounded-full bg-pink-500 mr-2" />
+            Quadratic Equation
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("algo-struct")}
+          >
+            <div className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
+            Structures
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-xs h-7 bg-[#2A2D2E] border-white/5 hover:bg-[#37373D] hover:text-white text-[#CCCCCC]"
+            onClick={() => onGenerateTest("algo-loops")}
+          >
+            <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+            Loops
           </Button>
         </div>
       </div>
