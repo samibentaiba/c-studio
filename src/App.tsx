@@ -1514,15 +1514,14 @@ END.`,
                 )}
               </div>
               {/* Collapsible Terminal */}
-              <div className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isTerminalCollapsed ? "h-8" : "h-1/3"}`}>
+              <div className="flex-shrink-0 flex flex-col" style={{ height: isTerminalCollapsed ? "2rem" : "33.333%" }}>
+                {/* Header - always visible */}
                 <div
-                  className="h-8 flex items-center justify-between px-3"
+                  className="h-8 flex-shrink-0 flex items-center justify-between px-3 cursor-pointer"
                   style={{ backgroundColor: "var(--theme-bg)", borderTop: "1px solid var(--theme-border)" }}
+                  onClick={() => setIsTerminalCollapsed(!isTerminalCollapsed)}
                 >
-                  <div
-                    className="flex items-center gap-2 cursor-pointer flex-1"
-                    onClick={() => setIsTerminalCollapsed(!isTerminalCollapsed)}
-                  >
+                  <div className="flex items-center gap-2">
                     <svg
                       className={`w-3 h-3 transition-transform ${isTerminalCollapsed ? "" : "rotate-180"}`}
                       style={{ color: "var(--theme-fg-muted)" }}
@@ -1549,8 +1548,9 @@ END.`,
                     </button>
                   </div>
                 </div>
+                {/* Content - collapsible */}
                 {!isTerminalCollapsed && (
-                  <div className="h-[calc(100%-2rem)]">
+                  <div className="flex-1 min-h-0">
                     <TerminalPanel
                       logs={logs}
                       onClear={() => setLogs([])}
