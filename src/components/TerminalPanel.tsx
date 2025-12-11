@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Terminal, Trash2 } from "lucide-react";
+import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { LogMessage } from "../types";
 import { cn } from "../lib/utils";
@@ -28,6 +30,14 @@ export function TerminalPanel({ logs, onClear, onInput }: TerminalPanelProps) {
 
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--theme-terminal-bg)' }}>
+      <div className="h-10 flex-shrink-0 flex items-center justify-between px-4" style={{ backgroundColor: 'var(--theme-bg-light)', borderBottom: '1px solid var(--theme-border)' }}>
+        <span className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--theme-fg)' }}>
+          <Terminal size={16} /> Output
+        </span>
+        <Button variant="ghost" size="icon" onClick={onClear} className="h-8 w-8">
+          <Trash2 size={16} className="text-muted-foreground hover:text-foreground" />
+        </Button>
+      </div>
       <ScrollArea className="flex-1 p-4 font-mono text-sm">
         {logs.map((log) => (
           <div key={log.id} className="flex gap-3 text-slate-300 mb-1">
