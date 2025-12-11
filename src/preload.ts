@@ -36,4 +36,7 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("download-and-install-update", downloadUrl, version),
   onUpdateProgress: (callback: (data: { status: string; progress?: number }) => void) => 
     ipcRenderer.on("update-progress", (_event, data) => callback(data)),
+    
+  // Shell terminal
+  executeShellCommand: (command: string) => ipcRenderer.invoke("execute-shell-command", command),
 });

@@ -470,6 +470,24 @@ if (Test-Path $exePath) { Start-Process $exePath }
     }
   });
 
+  // Execute shell command for terminal
+  ipcMain.handle("execute-shell-command", async (event, command: string) => {
+    const { exec } = await import("child_process");
+    return new Promise((resolve) => {
+      exec(command, { 
+        shell: "powershell.exe",
+        encoding: "utf-8",
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+      }, (error, stdout, stderr) => {
+        if (error && !stderr) {
+          resolve({ stdout: "", stderr: error.message, code: error.code || 1 });
+        } else {
+          resolve({ stdout, stderr, code: error ? 1 : 0 });
+        }
+      });
+    });
+  });
+
   createWindow();
 });
 

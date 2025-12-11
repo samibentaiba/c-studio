@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
+import { XtermTerminal } from "./components/XtermTerminal";
 import { EditorTabs } from "./components/EditorTabs";
 import { TitleBar } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
@@ -1550,7 +1551,7 @@ END.`,
                     </div>
                   </div>
                 ) : activeFileId === "terminal" ? (
-                  /* Terminal Tab Content - Shows GCC commands */
+                  /* Terminal Tab Content - Interactive PowerShell */
                   <div className="h-full flex flex-col" style={{ backgroundColor: "var(--theme-bg-dark)" }}>
                     <EditorTabs
                       openTabs={openTabs}
@@ -1562,11 +1563,7 @@ END.`,
                       showOutputTab={showOutputTab}
                     />
                     <div className="flex-1">
-                      <TerminalPanel
-                        logs={terminalLogs}
-                        onClear={() => setTerminalLogs([])}
-                        onInput={() => {}}
-                      />
+                      <XtermTerminal />
                     </div>
                   </div>
                 ) : activeFile ? (
