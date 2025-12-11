@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
+import { EditorTabs } from "./components/EditorTabs";
 import { TitleBar } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { ThemeProvider } from "./ThemeContext";
@@ -145,6 +146,7 @@ END.`,
     const saved = localStorage.getItem("c-studio-sidebar-width");
     return saved ? parseInt(saved, 10) : 256;
   });
+  const [showOutputTab, setShowOutputTab] = useState(false);
 
   // Recursive search for active file
   const findFile = (
@@ -1024,6 +1026,13 @@ END.`,
     if (isCompiling) return;
     setIsCompiling(true);
     addLog("info", "Compiling...");
+    
+    // Show Output tab when running
+    setShowOutputTab(true);
+    if (!openTabs.includes("output")) {
+      setOpenTabs((prev) => [...prev, "output"]);
+    }
+    setActiveFileId("output");
 
     try {
       // Pass the entire tree structure to the backend
@@ -1490,7 +1499,27 @@ END.`,
             {/* Primary Editor */}
             <div className="flex-1 flex flex-col min-w-0">
               <div className="flex-1 flex flex-col min-h-0">
-                {activeFile ? (
+                {activeFileId === "output" ? (
+                  /* Output Tab Content */
+                  <div className="h-full flex flex-col" style={{ backgroundColor: "var(--theme-bg-dark)" }}>
+                    <EditorTabs
+                      openTabs={openTabs}
+                      activeFileId={activeFileId}
+                      files={files}
+                      onTabClick={handleTabClick}
+                      onTabClose={handleTabClose}
+                      onSplitRight={handleSplitRight}
+                      showOutputTab={showOutputTab}
+                    />
+                    <div className="flex-1">
+                      <TerminalPanel
+                        logs={logs}
+                        onClear={() => setLogs([])}
+                        onInput={handleTerminalInput}
+                      />
+                    </div>
+                  </div>
+                ) : activeFile ? (
                   <MonacoEditor
                     activeFile={activeFile}
                     onContentChange={handleContentChange}
@@ -1503,6 +1532,7 @@ END.`,
                     onTabClose={handleTabClose}
                     onSplitRight={handleSplitRight}
                     onTranslate={handleTranslate}
+                    showOutputTab={showOutputTab}
                   />
                 ) : (
                   <div
@@ -1513,16 +1543,6 @@ END.`,
                   </div>
                 )}
               </div>
-              {/* Output Panel - only shows when there are logs */}
-              {logs.length > 0 && (
-                <div className="h-48 flex-shrink-0" style={{ borderTop: "1px solid var(--theme-border)" }}>
-                  <TerminalPanel
-                    logs={logs}
-                    onClear={() => setLogs([])}
-                    onInput={handleTerminalInput}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Split Editor (Right Pane) */}

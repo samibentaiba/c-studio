@@ -31,6 +31,7 @@ interface MonacoEditorProps {
   onTabClose: (fileId: string) => void;
   onSplitRight?: (fileId: string) => void;
   onTranslate?: () => void;
+  showOutputTab?: boolean;
 }
 
 export function MonacoEditor({
@@ -45,6 +46,7 @@ export function MonacoEditor({
   onTabClose,
   onSplitRight,
   onTranslate,
+  showOutputTab,
 }: MonacoEditorProps) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -234,6 +236,7 @@ export function MonacoEditor({
         onTabClick={onTabClick}
         onTabClose={onTabClose}
         onSplitRight={onSplitRight}
+        showOutputTab={showOutputTab}
       />
 
       {/* Toolbar */}

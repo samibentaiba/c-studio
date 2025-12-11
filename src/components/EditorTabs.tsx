@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, FileCode, SplitSquareHorizontal } from "lucide-react";
+import { X, FileCode, SplitSquareHorizontal, Terminal } from "lucide-react";
 import { FileSystemItem } from "../types";
 import { useTheme } from "../ThemeContext";
 
@@ -10,6 +10,7 @@ interface EditorTabsProps {
   onTabClick: (fileId: string) => void;
   onTabClose: (fileId: string) => void;
   onSplitRight?: (fileId: string) => void;
+  showOutputTab?: boolean;
 }
 
 export function EditorTabs({
@@ -19,6 +20,7 @@ export function EditorTabs({
   onTabClick,
   onTabClose,
   onSplitRight,
+  showOutputTab,
 }: EditorTabsProps) {
   const { theme } = useTheme();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
@@ -33,6 +35,16 @@ export function EditorTabs({
       }
     }
     return null;
+  };
+
+  // Get tab info (handles both files and special tabs like output)
+  const getTabInfo = (tabId: string): { name: string; icon: React.ReactNode } | null => {
+    if (tabId === "output") {
+      return { name: "Output", icon: <Terminal size={14} /> };
+    }
+    const file = findFile(files, tabId);
+    if (!file) return null;
+    return { name: file.name, icon: <FileCode size={14} /> };
   };
 
   // Close context menu when clicking outside
@@ -55,8 +67,8 @@ export function EditorTabs({
       }}
     >
       {openTabs.map((tabId) => {
-        const file = findFile(files, tabId);
-        if (!file) return null;
+        const tabInfo = getTabInfo(tabId);
+        if (!tabInfo) return null;
 
         const isActive = tabId === activeFileId;
 
@@ -79,21 +91,22 @@ export function EditorTabs({
             }}
             onContextMenu={(e) => {
               e.preventDefault();
-              if (onSplitRight) {
+              if (onSplitRight && tabId !== "output") {
                 setContextMenu({ x: e.clientX, y: e.clientY, tabId });
               }
             }}
           >
-            <FileCode
-              size={14}
+            <span
               style={{ color: isActive ? theme.ui.accent : theme.ui.foregroundMuted }}
               className="flex-shrink-0"
-            />
+            >
+              {tabInfo.icon}
+            </span>
             <span
               className="text-xs truncate max-w-[120px]"
               style={{ color: isActive ? theme.ui.foreground : theme.ui.foregroundMuted }}
             >
-              {file.name}
+              {tabInfo.name}
             </span>
             <button
               className="ml-1 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-opacity"
