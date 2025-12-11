@@ -1440,7 +1440,19 @@ END.`,
     }
   };
 
-  const handleOpenTerminal = () => {
+  const [terminalWorkspacePath, setTerminalWorkspacePath] = useState<string | null>(null);
+
+  const handleOpenTerminal = async () => {
+    // Save all files to temp directory first
+    try {
+      const result = await (window.electron as any).saveWorkspaceToTemp(files);
+      if (result.success) {
+        setTerminalWorkspacePath(result.path);
+      }
+    } catch (e) {
+      console.error("Failed to save workspace:", e);
+    }
+    
     setShowTerminalTab(true);
     if (!openTabs.includes("terminal")) {
       setOpenTabs((prev) => [...prev, "terminal"]);
@@ -1563,7 +1575,7 @@ END.`,
                       showOutputTab={showOutputTab}
                     />
                     <div className="flex-1">
-                      <XtermTerminal />
+                      <XtermTerminal workspacePath={terminalWorkspacePath} />
                     </div>
                   </div>
                 ) : activeFile ? (

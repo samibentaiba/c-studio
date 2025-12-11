@@ -471,13 +471,14 @@ if (Test-Path $exePath) { Start-Process $exePath }
   });
 
   // Execute shell command for terminal
-  ipcMain.handle("execute-shell-command", async (event, command: string) => {
+  ipcMain.handle("execute-shell-command", async (event, command: string, cwd?: string) => {
     const { exec } = await import("child_process");
     return new Promise((resolve) => {
       exec(command, { 
         shell: "powershell.exe",
         encoding: "utf-8",
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        maxBuffer: 10 * 1024 * 1024,
+        cwd: cwd || undefined,
       }, (error, stdout, stderr) => {
         if (error && !stderr) {
           resolve({ stdout: "", stderr: error.message, code: error.code || 1 });
@@ -486,6 +487,44 @@ if (Test-Path $exePath) { Start-Process $exePath }
         }
       });
     });
+  });
+
+  // Save workspace files to temp directory for terminal access
+  ipcMain.handle("save-workspace-to-temp", async (event, files: any[]) => {
+    const os = await import("os");
+    const tempDir = path.join(os.tmpdir(), "c-studio-workspace");
+    
+    // Create temp directory
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    } else {
+      // Clean existing files
+      const existingFiles = fs.readdirSync(tempDir);
+      for (const file of existingFiles) {
+        const filePath = path.join(tempDir, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+    
+    // Recursively save files
+    const saveFiles = (items: any[], dir: string) => {
+      for (const item of items) {
+        const itemPath = path.join(dir, item.name);
+        if (item.type === "folder" && item.children) {
+          if (!fs.existsSync(itemPath)) {
+            fs.mkdirSync(itemPath, { recursive: true });
+          }
+          saveFiles(item.children, itemPath);
+        } else if (item.type === "file" && item.content !== undefined) {
+          fs.writeFileSync(itemPath, item.content, "utf-8");
+        }
+      }
+    };
+    
+    saveFiles(files, tempDir);
+    return { success: true, path: tempDir };
   });
 
   createWindow();

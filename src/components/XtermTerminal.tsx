@@ -3,7 +3,11 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
-export function XtermTerminal() {
+interface XtermTerminalProps {
+  workspacePath?: string | null;
+}
+
+export function XtermTerminal({ workspacePath }: XtermTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -45,6 +49,11 @@ export function XtermTerminal() {
       xterm.writeln("Welcome to C-Studio Terminal!");
       xterm.writeln("=====================================");
       xterm.writeln("");
+      if (workspacePath) {
+        xterm.writeln(`Working directory: ${workspacePath}`);
+        xterm.writeln("Your files have been saved here for compilation.");
+        xterm.writeln("");
+      }
       xterm.writeln("QUICK START GUIDE:");
       xterm.writeln("");
       xterm.writeln("  1. COMPILE A C FILE:");
@@ -78,7 +87,7 @@ export function XtermTerminal() {
         if (data === "\r") {
           xterm.writeln("");
           if (currentLine.trim()) {
-            (window.electron as any)?.executeShellCommand?.(currentLine)
+            (window.electron as any)?.executeShellCommand?.(currentLine, workspacePath)
               .then((result: { stdout: string; stderr: string; code: number }) => {
                 if (result.stdout) {
                   result.stdout.split("\n").forEach((line: string) => {
@@ -123,7 +132,7 @@ export function XtermTerminal() {
         xtermRef.current = null;
       }
     };
-  }, []);
+  }, [workspacePath]);
 
   useEffect(() => {
     if (!isReady) return;

@@ -38,5 +38,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("update-progress", (_event, data) => callback(data)),
     
   // Shell terminal
-  executeShellCommand: (command: string) => ipcRenderer.invoke("execute-shell-command", command),
+  executeShellCommand: (command: string, cwd?: string) => ipcRenderer.invoke("execute-shell-command", command, cwd),
+  saveWorkspaceToTemp: (files: unknown) => ipcRenderer.invoke("save-workspace-to-temp", files),
 });
