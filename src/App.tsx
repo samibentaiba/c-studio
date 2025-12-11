@@ -1513,14 +1513,16 @@ END.`,
                   </div>
                 )}
               </div>
-              {/* Output Panel */}
-              <div className="h-48 flex-shrink-0" style={{ borderTop: "1px solid var(--theme-border)" }}>
-                <TerminalPanel
-                  logs={logs}
-                  onClear={() => setLogs([])}
-                  onInput={handleTerminalInput}
-                />
-              </div>
+              {/* Output Panel - only shows when there are logs */}
+              {logs.length > 0 && (
+                <div className="h-48 flex-shrink-0" style={{ borderTop: "1px solid var(--theme-border)" }}>
+                  <TerminalPanel
+                    logs={logs}
+                    onClear={() => setLogs([])}
+                    onInput={handleTerminalInput}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Split Editor (Right Pane) */}
