@@ -139,6 +139,13 @@ END.`,
     null
   );
 
+  // Terminal and sidebar state
+  const [isTerminalCollapsed, setIsTerminalCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("c-studio-sidebar-width");
+    return saved ? parseInt(saved, 10) : 256;
+  });
+
   // Recursive search for active file
   const findFile = (
     items: FileSystemItem[],
@@ -240,6 +247,21 @@ END.`,
       });
     };
     setFiles(toggle(files));
+  };
+
+  const handleRename = (id: string, newName: string) => {
+    const renameInTree = (items: FileSystemItem[]): FileSystemItem[] => {
+      return items.map((item) => {
+        if (item.id === id) {
+          return { ...item, name: newName };
+        }
+        if (item.children) {
+          return { ...item, children: renameInTree(item.children) };
+        }
+        return item;
+      });
+    };
+    setFiles(renameInTree(files));
   };
 
   const handleMoveFile = (sourceId: string, targetId: string | null) => {
@@ -1169,15 +1191,41 @@ END.`,
         e.preventDefault();
         setIsSidebarCollapsed((prev) => !prev);
       }
+      if (e.ctrlKey && e.key === "`") {
+        e.preventDefault();
+        setIsTerminalCollapsed((prev) => !prev);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Sidebar resize handler
+  const handleSidebarResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(150, Math.min(500, startWidth + e.clientX - startX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      localStorage.setItem("c-studio-sidebar-width", sidebarWidth.toString());
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   const handleTerminalInput = (input: string) => {
     window.electron.writeStdin(input);
     addLog("info", input + "\n"); // Echo input to terminal
   };
+
 
   // ===== File System Handlers =====
 
@@ -1312,7 +1360,7 @@ END.`,
     if (result.canceled || !result.filePath) return;
 
     const workspace = {
-      version: "1.4.5",
+      version: "1.5.0",
       name: "C-Studio Project",
       files: files,
     };
@@ -1409,9 +1457,10 @@ END.`,
             </svg>
           </button>
 
-          {/* Collapsible Sidebar */}
+          {/* Resizable Sidebar */}
           <div
-            className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isSidebarCollapsed ? "w-0" : "w-64"}`}
+            className="flex-shrink-0 transition-all duration-200 overflow-hidden flex"
+            style={{ width: isSidebarCollapsed ? 0 : sidebarWidth }}
           >
             <Sidebar
               files={files}
@@ -1422,7 +1471,16 @@ END.`,
               onToggleFolder={handleToggleFolder}
               onMoveFile={handleMoveFile}
               onGenerateTest={handleGenerateTest}
+              onRename={handleRename}
             />
+            {/* Resize handle */}
+            {!isSidebarCollapsed && (
+              <div
+                className="w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors"
+                style={{ backgroundColor: "var(--theme-border)" }}
+                onMouseDown={handleSidebarResize}
+              />
+            )}
           </div>
 
           {/* Main Editor and Split Editor */}
@@ -1453,12 +1511,38 @@ END.`,
                   </div>
                 )}
               </div>
-              <div className="h-1/3 flex-shrink-0">
-                <TerminalPanel
-                  logs={logs}
-                  onClear={() => setLogs([])}
-                  onInput={handleTerminalInput}
-                />
+              {/* Collapsible Terminal */}
+              <div className={`flex-shrink-0 transition-all duration-200 ${isTerminalCollapsed ? "h-8" : "h-1/3"}`}>
+                <div
+                  className="h-8 flex items-center justify-between px-3 cursor-pointer"
+                  style={{ backgroundColor: "var(--theme-bg)", borderTop: "1px solid var(--theme-border)" }}
+                  onClick={() => setIsTerminalCollapsed(!isTerminalCollapsed)}
+                >
+                  <span className="text-xs font-medium" style={{ color: "var(--theme-fg-muted)" }}>
+                    Terminal
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px]" style={{ color: "var(--theme-fg-muted)" }}>Ctrl+`</span>
+                    <svg
+                      className={`w-3 h-3 transition-transform ${isTerminalCollapsed ? "" : "rotate-180"}`}
+                      style={{ color: "var(--theme-fg-muted)" }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </div>
+                </div>
+                {!isTerminalCollapsed && (
+                  <div className="h-[calc(100%-2rem)]">
+                    <TerminalPanel
+                      logs={logs}
+                      onClear={() => setLogs([])}
+                      onInput={handleTerminalInput}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

@@ -41,6 +41,7 @@ interface SidebarProps {
       | "algo-struct"
       | "algo-loops"
   ) => void;
+  onRename: (id: string, newName: string) => void;
 }
 
 export function Sidebar({
@@ -52,12 +53,15 @@ export function Sidebar({
   onToggleFolder,
   onMoveFile,
   onGenerateTest,
+  onRename,
 }: SidebarProps) {
   const [creatingState, setCreatingState] = useState<{
     type: "file" | "folder";
     parentId?: string;
   } | null>(null);
   const [newItemName, setNewItemName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +69,14 @@ export function Sidebar({
     onFileCreate(newItemName, creatingState.type, creatingState.parentId);
     setNewItemName("");
     setCreatingState(null);
+  };
+
+  const handleRenameSubmit = (id: string) => {
+    if (renameValue.trim()) {
+      onRename(id, renameValue.trim());
+    }
+    setRenamingId(null);
+    setRenameValue("");
   };
 
   const renderTree = (items: FileSystemItem[], depth = 0) => {
@@ -135,7 +147,35 @@ export function Sidebar({
                 className="text-current opacity-70 group-hover:opacity-100"
               />
             )}
-            <span className="text-sm truncate">{item.name}</span>
+            {renamingId === item.id ? (
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => handleRenameSubmit(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameSubmit(item.id);
+                  if (e.key === "Escape") {
+                    setRenamingId(null);
+                    setRenameValue("");
+                  }
+                }}
+                autoFocus
+                className="text-sm bg-transparent border border-blue-500 rounded px-1 outline-none w-full"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                className="text-sm truncate"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setRenamingId(item.id);
+                  setRenameValue(item.name);
+                }}
+              >
+                {item.name}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center opacity-0 group-hover:opacity-100">
