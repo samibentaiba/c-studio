@@ -1514,7 +1514,7 @@ END.`,
                 )}
               </div>
               {/* Collapsible Terminal */}
-              <div className={`flex-shrink-0 transition-all duration-200 ${isTerminalCollapsed ? "h-8" : "h-1/3"}`}>
+              <div className={`flex-shrink-0 transition-all duration-200 overflow-hidden ${isTerminalCollapsed ? "h-8" : "h-1/3"}`}>
                 <div
                   className="h-8 flex items-center justify-between px-3"
                   style={{ backgroundColor: "var(--theme-bg)", borderTop: "1px solid var(--theme-border)" }}
