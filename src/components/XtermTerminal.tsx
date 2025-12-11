@@ -41,6 +41,30 @@ export function XtermTerminal() {
       fitAddonRef.current = fitAddon;
       setIsReady(true);
 
+      // Welcome guide for students
+      xterm.writeln("Welcome to C-Studio Terminal!");
+      xterm.writeln("=====================================");
+      xterm.writeln("");
+      xterm.writeln("QUICK START GUIDE:");
+      xterm.writeln("");
+      xterm.writeln("  1. COMPILE A C FILE:");
+      xterm.writeln("     gcc main.c -o program.exe");
+      xterm.writeln("");
+      xterm.writeln("  2. RUN YOUR PROGRAM:");
+      xterm.writeln("     .\\program.exe");
+      xterm.writeln("");
+      xterm.writeln("  3. COMPILE MULTIPLE FILES:");
+      xterm.writeln("     gcc main.c utils.c -o program.exe");
+      xterm.writeln("");
+      xterm.writeln("  4. USEFUL COMMANDS:");
+      xterm.writeln("     dir              - List files in current directory");
+      xterm.writeln("     cd folder_name   - Change directory");
+      xterm.writeln("     gcc --version    - Check compiler version");
+      xterm.writeln("     cls              - Clear the screen");
+      xterm.writeln("");
+      xterm.writeln("=====================================");
+      xterm.writeln("");
+
       // Simple PowerShell prompt
       let currentLine = "";
       
