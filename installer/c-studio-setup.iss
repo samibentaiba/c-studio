@@ -2,7 +2,7 @@
 ; Built with Inno Setup 6.x
 
 #define MyAppName "C-Studio"
-#define MyAppVersion "1.5.0"
+#define MyAppVersion "1.5.1"
 #define MyAppPublisher "Sami Bentaiba"
 #define MyAppURL "https://github.com/samibentaiba/c-studio"
 #define MyAppExeName "c-studio.exe"
