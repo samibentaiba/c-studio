@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme, appThemes } from "../ThemeContext";
-import { Palette, Terminal } from "lucide-react";
+import { Palette, Terminal, GitBranch, Check, AlertTriangle, Loader2 } from "lucide-react";
 
 interface MenuItem {
   label?: string;
@@ -15,6 +15,7 @@ interface MenuProps {
 }
 
 function DropdownMenu({ label, items }: MenuProps) {
+  const testId = `menu-${label.toLowerCase()}`;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -46,6 +47,7 @@ function DropdownMenu({ label, items }: MenuProps) {
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isOpen ? theme.ui.backgroundLight : "transparent")}
         onClick={() => setIsOpen(!isOpen)}
+        data-testid={testId}
       >
         {label}
       </div>
@@ -71,6 +73,7 @@ function DropdownMenu({ label, items }: MenuProps) {
                   item.action?.();
                   setIsOpen(false);
                 }}
+                data-testid={`${testId}-item-${item.label?.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
               >
                 <span>{item.label}</span>
                 {item.shortcut && (
@@ -163,6 +166,8 @@ function ThemeSelector() {
   );
 }
 
+export type FlowchartStatus = 'ok' | 'error' | 'loading' | 'hidden';
+
 interface TitleBarProps {
   onNewFile?: () => void;
   onOpenFile?: () => void;
@@ -171,6 +176,10 @@ interface TitleBarProps {
   onExportWorkspace?: () => void;
   onImportWorkspace?: () => void;
   onOpenTerminal?: () => void;
+  onToggleFlowchart?: () => void;
+  isFlowchartVisible?: boolean;
+  flowchartStatus?: FlowchartStatus;
+  flowchartError?: string;
 }
 
 export function TitleBar({
@@ -181,6 +190,10 @@ export function TitleBar({
   onExportWorkspace,
   onImportWorkspace,
   onOpenTerminal,
+  onToggleFlowchart,
+  isFlowchartVisible = false,
+  flowchartStatus = 'hidden',
+  flowchartError,
 }: TitleBarProps) {
   const { theme } = useTheme();
 
@@ -188,12 +201,12 @@ export function TitleBar({
     { label: "New File", action: onNewFile, shortcut: "Ctrl+N" },
     { divider: true },
     { label: "Open File...", action: onOpenFile, shortcut: "Ctrl+O" },
-    { label: "Open Folder...", action: onOpenFolder },
+    { label: "Open Folder...", action: onOpenFolder, shortcut: "Ctrl+Shift+O" },
     { divider: true },
     { label: "Save", action: onSaveFile, shortcut: "Ctrl+S" },
     { divider: true },
-    { label: "Export Workspace...", action: onExportWorkspace },
-    { label: "Import Workspace...", action: onImportWorkspace },
+    { label: "Export Workspace...", action: onExportWorkspace, shortcut: "Ctrl+E" },
+    { label: "Import Workspace...", action: onImportWorkspace, shortcut: "Ctrl+I" },
   ];
 
   const editMenuItems: MenuItem[] = [
@@ -206,8 +219,8 @@ export function TitleBar({
   ];
 
   const viewMenuItems: MenuItem[] = [
-    { label: "Toggle Terminal", action: onOpenTerminal },
-    { label: "Toggle Sidebar" },
+    { label: "Toggle Terminal", action: onOpenTerminal, shortcut: "Ctrl+`" },
+    { label: "Toggle Sidebar", shortcut: "Ctrl+B" },
   ];
 
   const helpMenuItems: MenuItem[] = [
@@ -241,6 +254,36 @@ export function TitleBar({
         C-Studio - v1.5.0
       </div>
       <div className="flex items-center gap-2 mr-2">
+        {/* Flowchart Toggle Button */}
+        <div
+          className="px-2 py-1 text-xs cursor-pointer transition-colors rounded flex items-center gap-1"
+          style={{ 
+            color: isFlowchartVisible ? theme.ui.accent : theme.ui.foreground,
+            backgroundColor: isFlowchartVisible ? theme.ui.backgroundLight : "transparent",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isFlowchartVisible ? theme.ui.backgroundLight : "transparent")}
+          onClick={onToggleFlowchart}
+          title={"Afficher/Masquer l'organigramme (Ctrl+Shift+F)"}
+          data-testid="btn-flowchart-toggle"
+        >
+          <GitBranch size={12} />
+          Organigramme
+          {/* Status indicator */}
+          {isFlowchartVisible && flowchartStatus !== 'hidden' && (
+            <span className="ml-1" title={flowchartError || ''}>
+              {flowchartStatus === 'ok' && (
+                <Check size={10} className="text-green-500" />
+              )}
+              {flowchartStatus === 'error' && (
+                <AlertTriangle size={10} className="text-yellow-500" />
+              )}
+              {flowchartStatus === 'loading' && (
+                <Loader2 size={10} className="animate-spin text-blue-400" />
+              )}
+            </span>
+          )}
+        </div>
         {/* Terminal Button */}
         <div
           className="px-2 py-1 text-xs cursor-pointer transition-colors rounded flex items-center gap-1"
@@ -248,6 +291,8 @@ export function TitleBar({
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.ui.backgroundLight)}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
           onClick={onOpenTerminal}
+          title="Terminal (Ctrl+`)"
+          data-testid="btn-terminal"
         >
           <Terminal size={12} />
           Terminal

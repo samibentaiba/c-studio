@@ -1,0 +1,71 @@
+// Test: Multiple procedures combined
+ALGORITHM ProceduresEdges
+VAR
+    a, b, c : INTEGER
+    arr : ARRAY[5] OF INTEGER
+    i : INTEGER
+
+PROCEDURE Reset(VAR x : INTEGER)
+BEGIN
+    x <- 0
+END
+
+PROCEDURE SetValue(VAR x : INTEGER, val : INTEGER)
+BEGIN
+    x <- val
+END
+
+PROCEDURE PrintValue(x : INTEGER)
+BEGIN
+    PRINT("Value:", x)
+END
+
+PROCEDURE FillArray(val : INTEGER)
+VAR
+    j : INTEGER
+BEGIN
+    FOR j <- 0 TO 4 DO
+        arr[j] <- val
+END
+
+PROCEDURE PrintArray()
+VAR
+    j : INTEGER
+BEGIN
+    FOR j <- 0 TO 4 DO
+        PRINT(arr[j])
+END
+
+BEGIN
+    PRINT("=== Procedure Tests ===")
+    
+    // Simple procedure calls
+    a <- 100
+    PrintValue(a)
+    
+    Reset(a)
+    PrintValue(a)
+    
+    SetValue(a, 42)
+    PrintValue(a)
+    
+    // Multiple VAR params
+    a <- 10
+    b <- 20
+    c <- 30
+    PRINT("Before: a=", a, "b=", b, "c=", c)
+    
+    Reset(a)
+    Reset(b)
+    SetValue(c, 99)
+    PRINT("After: a=", a, "b=", b, "c=", c)
+    
+    // Array procedures
+    PRINT("Filling array with 7:")
+    FillArray(7)
+    PrintArray()
+    
+    PRINT("Filling array with 0:")
+    FillArray(0)
+    PrintArray()
+END.

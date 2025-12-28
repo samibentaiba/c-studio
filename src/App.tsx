@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { MonacoEditor } from "./components/MonacoEditor";
 import { TerminalPanel } from "./components/TerminalPanel";
 import { XtermTerminal } from "./components/XtermTerminal";
 import { EditorTabs } from "./components/EditorTabs";
-import { TitleBar } from "./components/TitleBar";
+import { TitleBar, FlowchartStatus } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
+import { FlowchartPanel } from "./components/FlowchartPanel";
 import { ThemeProvider } from "./ThemeContext";
 import { FileSystemItem, LogMessage, LogType } from "./types";
+import { useShortcut } from "./ShortcutContext";
 // Import modules directly (barrel export from index.ts causes crash)
 import { translateCToAlgo } from "./usdb-compiler/c-to-algo";
 import { Parser } from "./usdb-compiler/parser";
@@ -151,6 +153,16 @@ END.`,
   const [terminalLogs, setTerminalLogs] = useState<LogMessage[]>([]);
   const [showTerminalTab, setShowTerminalTab] = useState(false);
 
+  // Flowchart panel state
+  const [isFlowchartVisible, setIsFlowchartVisible] = useState(false);
+  const [flowchartStatus, setFlowchartStatus] = useState<FlowchartStatus>('ok');
+  const [flowchartError, setFlowchartError] = useState<string | undefined>(undefined);
+  const [flowchartPanelWidth, setFlowchartPanelWidth] = useState(() => {
+    const saved = localStorage.getItem("c-studio-flowchart-width");
+    return saved ? parseInt(saved, 10) : 400;
+  });
+  const [isResizingFlowchart, setIsResizingFlowchart] = useState(false);
+
   // Recursive search for active file
   const findFile = (
     items: FileSystemItem[],
@@ -192,7 +204,7 @@ END.`,
     ]);
   };
 
-  const handleFileCreate = (
+  const handleFileCreate = useCallback((
     name: string,
     type: "file" | "folder",
     parentId?: string
@@ -206,35 +218,36 @@ END.`,
       isOpen: true,
     };
 
-    if (!parentId) {
-      setFiles([...files, newItem]);
-    } else {
-      const updateChildren = (items: FileSystemItem[]): FileSystemItem[] => {
-        return items.map((item) => {
-          if (item.id === parentId) {
-            return {
-              ...item,
-              children: [...(item.children || []), newItem],
-              isOpen: true,
-            };
-          }
-          if (item.children) {
-            return { ...item, children: updateChildren(item.children) };
-          }
-          return item;
-        });
-      };
-      setFiles(updateChildren(files));
-    }
+    setFiles((prev) => {
+      if (!parentId) {
+        return [...prev, newItem];
+      } else {
+        const updateChildren = (items: FileSystemItem[]): FileSystemItem[] => {
+          return items.map((item) => {
+            if (item.id === parentId) {
+              return {
+                ...item,
+                children: [...(item.children || []), newItem],
+                isOpen: true,
+              };
+            }
+            if (item.children) {
+              return { ...item, children: updateChildren(item.children) };
+            }
+            return item;
+          });
+        };
+        return updateChildren(prev);
+      }
+    });
 
     if (type === "file") {
       setActiveFileId(newItem.id);
-      // Add to open tabs if not already there
       setOpenTabs((prev) =>
         prev.includes(newItem.id) ? prev : [...prev, newItem.id]
       );
     }
-  };
+  }, []);
 
   const handleDelete = (id: string) => {
     const deleteFromTree = (items: FileSystemItem[]): FileSystemItem[] => {
@@ -969,11 +982,12 @@ END.`,
     setFiles([...files, newFolder]);
   };
 
-  const handleContentChange = (content: string) => {
-    if (!activeFileId) return;
+  const handleContentChange = (content: string, targetId?: string) => {
+    const idToUpdate = targetId || activeFileId;
+    if (!idToUpdate) return;
     const updateContent = (items: FileSystemItem[]): FileSystemItem[] => {
       return items.map((item) => {
-        if (item.id === activeFileId) {
+        if (item.id === idToUpdate) {
           return { ...item, content };
         }
         if (item.children) {
@@ -1215,21 +1229,7 @@ END.`,
     }
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "b") {
-        e.preventDefault();
-        setIsSidebarCollapsed((prev) => !prev);
-      }
-      if (e.ctrlKey && e.key === "`") {
-        e.preventDefault();
-        setIsTerminalCollapsed((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+
 
   // Sidebar resize handler
   const handleSidebarResize = (e: React.MouseEvent) => {
@@ -1260,11 +1260,11 @@ END.`,
 
   // ===== File System Handlers =====
 
-  const handleNewFile = () => {
+  const handleNewFile = useCallback(() => {
     handleFileCreate("untitled.c", "file");
-  };
+  }, [handleFileCreate]);
 
-  const handleOpenFile = async () => {
+  const handleOpenFile = useCallback(async () => {
     const result = await window.electron.showOpenDialog({
       title: "Open File",
       filters: [
@@ -1289,15 +1289,15 @@ END.`,
         type: "file",
         content: fileResult.content,
       };
-      setFiles([...files, newFile]);
+      setFiles((prev) => [...prev, newFile]);
       setActiveFileId(newFile.id);
       addLog("success", `Opened: ${fileName}`);
     } else {
       addLog("error", `Failed to open file: ${fileResult.error}`);
     }
-  };
+  }, []);
 
-  const handleOpenFolder = async () => {
+  const handleOpenFolder = useCallback(async () => {
     const result = await window.electron.showOpenDialog({
       title: "Open Folder",
       properties: ["openDirectory"],
@@ -1345,14 +1345,14 @@ END.`,
         isOpen: true,
       };
 
-      setFiles([...files, newFolder]);
+      setFiles((prev) => [...prev, newFolder]);
       addLog("success", `Opened folder: ${folderResult.folderName}`);
     } else {
       addLog("error", `Failed to open folder: ${folderResult.error}`);
     }
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!activeFile || activeFile.type !== "file") {
       addLog("warning", "No file selected to save");
       return;
@@ -1379,9 +1379,9 @@ END.`,
     } else {
       addLog("error", `Failed to save: ${saveResult.error}`);
     }
-  };
+  }, [activeFile]);
 
-  const handleExportWorkspace = async () => {
+  const handleExportWorkspace = useCallback(async () => {
     const result = await window.electron.showSaveDialog({
       title: "Export Workspace",
       defaultPath: "project.cstudio",
@@ -1406,9 +1406,9 @@ END.`,
     } else {
       addLog("error", `Failed to export: ${saveResult.error}`);
     }
-  };
+  }, [files]);
 
-  const handleImportWorkspace = async () => {
+  const handleImportWorkspace = useCallback(async () => {
     const result = await window.electron.showOpenDialog({
       title: "Import Workspace",
       filters: [{ name: "C-Studio Workspace", extensions: ["cstudio"] }],
@@ -1438,7 +1438,34 @@ END.`,
     } else {
       addLog("error", `Failed to import: ${fileResult.error}`);
     }
-  };
+  }, []);
+  
+  const handleCloseActiveTab = useCallback(() => {
+    if (activeFileId) {
+      handleTabClose(activeFileId);
+    }
+  }, [activeFileId, handleTabClose]);
+
+  // Keyboard shortcuts
+  const { registerShortcut } = useShortcut();
+
+  useEffect(() => {
+    const unsubs = [
+      registerShortcut("Ctrl+n", (e) => { e.preventDefault(); handleNewFile(); }),
+      registerShortcut("Ctrl+o", (e) => { e.preventDefault(); handleOpenFile(); }),
+      registerShortcut("Ctrl+Shift+o", (e) => { e.preventDefault(); handleOpenFolder(); }),
+      registerShortcut("Ctrl+s", (e) => { e.preventDefault(); handleSave(); }),
+      registerShortcut("Ctrl+e", (e) => { e.preventDefault(); handleExportWorkspace(); }),
+      registerShortcut("Ctrl+i", (e) => { e.preventDefault(); handleImportWorkspace(); }),
+      registerShortcut("Ctrl+`", (e) => { e.preventDefault(); setIsTerminalCollapsed((prev) => !prev); }),
+      registerShortcut("Ctrl+b", (e) => { e.preventDefault(); setIsSidebarCollapsed((prev) => !prev); }),
+      registerShortcut("Ctrl+Shift+f", (e) => { e.preventDefault(); setIsFlowchartVisible((prev) => !prev); }),
+      registerShortcut("F5", (e) => { e.preventDefault(); handleRun(); }),
+      registerShortcut("Ctrl+t", (e) => { e.preventDefault(); handleTranslate(); }),
+      registerShortcut("Ctrl+w", (e) => { e.preventDefault(); handleCloseActiveTab(); }),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, [handleNewFile, handleOpenFile, handleOpenFolder, handleSave, handleExportWorkspace, handleImportWorkspace, handleRun, handleTranslate, handleCloseActiveTab]);
 
   const [terminalWorkspacePath, setTerminalWorkspacePath] = useState<string | null>(null);
 
@@ -1477,6 +1504,10 @@ END.`,
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
           onOpenTerminal={handleOpenTerminal}
+          onToggleFlowchart={() => setIsFlowchartVisible(!isFlowchartVisible)}
+          isFlowchartVisible={isFlowchartVisible}
+          flowchartStatus={flowchartStatus}
+          flowchartError={flowchartError}
         />
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar collapse toggle */}
@@ -1605,7 +1636,7 @@ END.`,
             </div>
 
             {/* Split Editor (Right Pane) */}
-            {splitTabs.length > 0 && (
+            {splitTabs.length > 0 && !isFlowchartVisible && (
               <div
                 className="flex-1 flex flex-col min-w-0"
                 style={{ borderLeft: "1px solid var(--theme-border)" }}
@@ -1631,6 +1662,72 @@ END.`,
                       Select a file
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Flowchart Panel (Right Pane) with Resize Handle */}
+            {isFlowchartVisible && (
+              <div
+                className="flex min-w-0 relative"
+                style={{ 
+                  width: `${flowchartPanelWidth}px`,
+                  minWidth: "250px",
+                  maxWidth: "70%",
+                }}
+              >
+                {/* Resize Handle */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 z-10"
+                  style={{ 
+                    backgroundColor: isResizingFlowchart ? 'rgba(59, 130, 246, 0.5)' : 'transparent',
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsResizingFlowchart(true);
+                    const startX = e.clientX;
+                    const startWidth = flowchartPanelWidth;
+                    
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      const delta = startX - moveEvent.clientX;
+                      const newWidth = Math.max(250, Math.min(window.innerWidth * 0.7, startWidth + delta));
+                      setFlowchartPanelWidth(newWidth);
+                    };
+                    
+                    const handleMouseUp = () => {
+                      setIsResizingFlowchart(false);
+                      localStorage.setItem("c-studio-flowchart-width", flowchartPanelWidth.toString());
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                />
+                
+                {/* Panel Content */}
+                <div 
+                  className="flex-1 flex flex-col"
+                  style={{ borderLeft: "1px solid var(--theme-border)" }}
+                >
+                  <FlowchartPanel
+                    source={activeFile?.content || ""}
+                    language={activeFile?.name.endsWith('.algo') ? 'algo' : 'c'}
+                    onParseError={(error) => {
+                      setFlowchartStatus('error');
+                      setFlowchartError(error);
+                    }}
+                    onParseSuccess={() => {
+                      setFlowchartStatus('ok');
+                      setFlowchartError(undefined);
+                    }}
+                      onCodeChange={(newCode) => {
+                        if (activeFileId) {
+                          handleContentChange(newCode, activeFileId);
+                        }
+                      }}
+                  />
                 </div>
               </div>
             )}

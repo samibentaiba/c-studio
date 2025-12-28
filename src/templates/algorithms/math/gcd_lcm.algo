@@ -1,0 +1,47 @@
+// GCD and LCM Algorithms
+// Greatest Common Divisor and Least Common Multiple
+// Using recursive Euclidean Algorithm
+
+ALGORITHM GCD_LCM
+VAR
+    a, b, gcd_result, lcm_result : INTEGER
+
+// GCD using Euclidean Algorithm (Recursive)
+FUNCTION GCD(x : INTEGER, y : INTEGER) : INTEGER
+BEGIN
+    IF (y = 0) THEN
+        RETURN(x)
+    ELSE
+        RETURN(GCD(y, x MOD y))
+END
+
+// LCM = (a * b) / GCD(a, b)
+FUNCTION LCM(x : INTEGER, y : INTEGER) : INTEGER
+BEGIN
+    RETURN((x * y) DIV GCD(x, y))
+END
+
+BEGIN
+    PRINT("=== GCD and LCM Calculator ===")
+    
+    a <- 48
+    b <- 18
+    
+    PRINT("Numbers:", a, "and", b)
+    
+    gcd_result <- GCD(a, b)
+    PRINT("GCD =", gcd_result)
+    
+    lcm_result <- LCM(a, b)
+    PRINT("LCM =", lcm_result)
+    
+    // Verify: GCD * LCM = a * b
+    PRINT("Verification: GCD * LCM =", gcd_result * lcm_result)
+    PRINT("a * b =", a * b)
+    
+    // Another example
+    a <- 56
+    b <- 98
+    PRINT("GCD of 56 and 98 =", GCD(a, b))
+    PRINT("LCM of 56 and 98 =", LCM(a, b))
+END.

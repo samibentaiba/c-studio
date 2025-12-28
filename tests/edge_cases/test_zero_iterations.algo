@@ -1,0 +1,24 @@
+// Test: Zero iterations in loops
+ALGORITHM ZeroIterations
+VAR
+    i, count : INTEGER
+BEGIN
+    count <- 0
+    
+    // FOR loop with no iterations (start > end)
+    FOR i <- 5 TO 1 DO
+        count <- count + 1
+    PRINT("FOR 5 to 1 iterations:", count)
+    
+    // FOR loop with exactly 1 iteration
+    count <- 0
+    FOR i <- 1 TO 1 DO
+        count <- count + 1
+    PRINT("FOR 1 to 1 iterations:", count)
+    
+    // FOR loop with 0 to 0 (one iteration)
+    count <- 0
+    FOR i <- 0 TO 0 DO
+        count <- count + 1
+    PRINT("FOR 0 to 0 iterations:", count)
+END.

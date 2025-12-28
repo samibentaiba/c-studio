@@ -1,0 +1,121 @@
+// Prime Number Algorithms
+// Check if a number is prime, generate primes
+
+ALGORITHM PrimeNumbers
+CONST MAX = 50
+VAR
+    n, i, j, k, count : INTEGER
+    primes : ARRAY[MAX] OF INTEGER
+    sieve : ARRAY[MAX] OF BOOLEAN
+    isPrime : BOOLEAN
+
+// Helper function to check divisibility
+FUNCTION IsDivisibleBy(num : INTEGER, divisor : INTEGER) : BOOLEAN
+BEGIN
+    IF (num MOD divisor = 0) THEN
+        RETURN(TRUE)
+    ELSE
+        RETURN(FALSE)
+END
+
+// Check if a number is prime (simple version for small numbers)
+FUNCTION CheckPrime(num : INTEGER) : BOOLEAN
+VAR
+    d : INTEGER
+BEGIN
+    IF (num <= 1) THEN
+        RETURN(FALSE)
+    
+    IF (num <= 3) THEN
+        RETURN(TRUE)
+    
+    IF (IsDivisibleBy(num, 2)) THEN
+        RETURN(FALSE)
+    
+    // Check odd divisors up to sqrt(num) approximately
+    d <- 3
+    IF (d * d <= num) THEN
+    BEGIN
+        IF (IsDivisibleBy(num, d)) THEN
+            RETURN(FALSE)
+    END
+    
+    d <- 5
+    IF (d * d <= num) THEN
+    BEGIN
+        IF (IsDivisibleBy(num, d)) THEN
+            RETURN(FALSE)
+    END
+    
+    d <- 7
+    IF (d * d <= num) THEN
+    BEGIN
+        IF (IsDivisibleBy(num, d)) THEN
+            RETURN(FALSE)
+    END
+    
+    RETURN(TRUE)
+END
+
+BEGIN
+    PRINT("=== Prime Number Algorithms ===")
+    
+    // Test primality for various numbers
+    n <- 2
+    IF (CheckPrime(n)) THEN
+        PRINT(n, "is prime")
+    ELSE
+        PRINT(n, "is not prime")
+    
+    n <- 17
+    IF (CheckPrime(n)) THEN
+        PRINT(n, "is prime")
+    ELSE
+        PRINT(n, "is not prime")
+    
+    n <- 24
+    IF (CheckPrime(n)) THEN
+        PRINT(n, "is prime")
+    ELSE
+        PRINT(n, "is not prime")
+    
+    n <- 29
+    IF (CheckPrime(n)) THEN
+        PRINT(n, "is prime")
+    ELSE
+        PRINT(n, "is not prime")
+    
+    // Sieve of Eratosthenes in main body
+    PRINT("Primes using Sieve (up to 50):")
+    
+    // Initialize sieve
+    FOR j <- 0 TO MAX-1 DO
+        sieve[j] <- TRUE
+    sieve[0] <- FALSE
+    sieve[1] <- FALSE
+    
+    // Sieve algorithm using FOR loops
+    FOR j <- 2 TO 7 DO
+    BEGIN
+        IF (sieve[j]) THEN
+        BEGIN
+            k <- j + j
+            FOR k <- j + j TO MAX-1 STEP j DO
+                sieve[k] <- FALSE
+        END
+    END
+    
+    // Collect and print primes
+    count <- 0
+    FOR j <- 2 TO MAX-1 DO
+    BEGIN
+        IF (sieve[j]) THEN
+        BEGIN
+            PRINT(j)
+            primes[count] <- j
+            count <- count + 1
+        END
+    END
+    
+    PRINT("Found", count, "primes")
+END.

@@ -1,0 +1,47 @@
+// Test: Array of structures
+ALGORITHM ArrayOfStructures
+CONST MAX = 3
+TYPE
+    Student = STRUCTURE
+    BEGIN
+        id : INTEGER
+        grade : INTEGER
+    END
+VAR
+    students : ARRAY[MAX] OF Student
+    i, total, avg : INTEGER
+BEGIN
+    PRINT("=== Array of Structures ===")
+    
+    // Initialize students
+    students[0].id <- 1
+    students[0].grade <- 85
+    
+    students[1].id <- 2
+    students[1].grade <- 92
+    
+    students[2].id <- 3
+    students[2].grade <- 78
+    
+    // Print all students
+    PRINT("Student records:")
+    FOR i <- 0 TO MAX-1 DO
+        PRINT("ID:", students[i].id, "Grade:", students[i].grade)
+    
+    // Calculate total
+    total <- 0
+    FOR i <- 0 TO MAX-1 DO
+        total <- total + students[i].grade
+    
+    PRINT("Total grades:", total)
+    avg <- total DIV MAX
+    PRINT("Average grade:", avg)
+    
+    // Find highest grade
+    PRINT("Finding highest grade...")
+    FOR i <- 0 TO MAX-1 DO
+    BEGIN
+        IF (students[i].grade >= 90) THEN
+            PRINT("Student", students[i].id, "has A grade")
+    END
+END.

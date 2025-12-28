@@ -1,0 +1,114 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e7]: C
+      - generic [ref=e8]:
+        - generic [ref=e10] [cursor=pointer]: File
+        - generic [ref=e12] [cursor=pointer]: Edit
+        - generic [ref=e14] [cursor=pointer]: View
+        - generic [ref=e16] [cursor=pointer]: Help
+      - generic [ref=e17]: C-Studio - v1.5.0
+      - generic [ref=e18]:
+        - generic "Afficher/Masquer l'organigramme (Ctrl+Shift+F)" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+          - text: Organigramme
+        - 'generic "Terminal (Ctrl+`)" [ref=e24] [cursor=pointer]':
+          - img [ref=e25]
+          - text: Terminal
+        - generic [ref=e28] [cursor=pointer]:
+          - img [ref=e29]
+          - text: Theme
+    - generic [ref=e35]:
+      - button "Collapse Sidebar (Ctrl+B)" [ref=e36] [cursor=pointer]:
+        - img [ref=e37]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - heading "C-Studio" [level=1] [ref=e43]: C-Studio
+          - generic [ref=e45]:
+            - button "New File (Ctrl+N)" [ref=e46] [cursor=pointer]:
+              - img
+            - button "New Folder (Ctrl+Shift+N)" [ref=e47] [cursor=pointer]:
+              - img
+        - generic [ref=e50]:
+          - generic [ref=e52] [cursor=pointer]:
+            - generic [ref=e53]:
+              - img [ref=e54]
+              - generic [ref=e59]: main.c
+            - button [ref=e61]:
+              - img
+          - generic [ref=e63] [cursor=pointer]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - generic [ref=e70]: utils.h
+            - button [ref=e72]:
+              - img
+          - generic [ref=e74] [cursor=pointer]:
+            - generic [ref=e75]:
+              - img [ref=e76]
+              - generic [ref=e81]: utils.c
+            - button [ref=e83]:
+              - img
+          - generic [ref=e85] [cursor=pointer]:
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - generic [ref=e92]: factorial.algo
+            - button [ref=e94]:
+              - img
+        - generic [ref=e95]:
+          - heading "C Language" [level=3] [ref=e96]
+          - generic [ref=e97]:
+            - button "Multi-Main" [ref=e98] [cursor=pointer]: Multi-Main
+            - button "Nested Project" [ref=e100] [cursor=pointer]: Nested Project
+            - button "Assets / I/O" [ref=e102] [cursor=pointer]: Assets / I/O
+            - button "Pointers & Libraries" [ref=e104] [cursor=pointer]: Pointers & Libraries
+          - heading "USDB Algo" [level=3] [ref=e106]
+          - generic [ref=e107]:
+            - button "Factorial" [ref=e108] [cursor=pointer]: Factorial
+            - button "Array Sum" [ref=e110] [cursor=pointer]: Array Sum
+            - button "Quadratic Equation" [ref=e112] [cursor=pointer]: Quadratic Equation
+            - button "Structures" [ref=e114] [cursor=pointer]: Structures
+            - button "Loops" [ref=e116] [cursor=pointer]: Loops
+      - generic [ref=e122]:
+        - generic [ref=e124] [cursor=pointer]:
+          - img [ref=e126]
+          - generic [ref=e131]: main.c
+          - button [ref=e132]:
+            - img [ref=e133]
+        - generic [ref=e137]:
+          - button "Format" [ref=e138] [cursor=pointer]
+          - button "To Algo" [ref=e139] [cursor=pointer]:
+            - img
+            - text: To Algo
+          - button "Run Code" [ref=e140] [cursor=pointer]:
+            - img
+            - text: Run Code
+        - code [ref=e144]:
+          - generic [ref=e145]:
+            - textbox "Editor content"
+            - textbox [ref=e146]
+            - generic [ref=e148]:
+              - generic [ref=e151]: "1"
+              - generic [ref=e153]: "2"
+              - generic [ref=e155]: "3"
+              - generic [ref=e156]:
+                - generic [ref=e157] [cursor=pointer]: 
+                - generic [ref=e158]: "4"
+              - generic [ref=e160]: "5"
+              - generic [ref=e162]: "6"
+              - generic [ref=e164]: "7"
+              - generic [ref=e166]: "8"
+            - generic [ref=e180]:
+              - generic [ref=e182]: "#include <stdio.h>"
+              - generic [ref=e184]: "#include \"utils.h\""
+              - generic [ref=e187]: "int main() {"
+              - generic [ref=e189]: printf("App Running...\n");
+              - generic [ref=e191]: print_message();
+              - generic [ref=e193]: return 0;
+              - generic [ref=e195]: "}"
+  - generic [ref=e197]:
+    - alert
+    - alert
+```

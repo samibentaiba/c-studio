@@ -1,0 +1,40 @@
+// Test: 2D Array edge cases  
+ALGORITHM Array2DEdges
+CONST ROWS = 3
+CONST COLS = 4
+VAR
+    matrix : ARRAY[ROWS][COLS] OF INTEGER
+    i, j, sum : INTEGER
+BEGIN
+    // Initialize all to zero
+    FOR i <- 0 TO ROWS-1 DO
+        FOR j <- 0 TO COLS-1 DO
+            matrix[i][j] <- 0
+    
+    PRINT("Initialized to zeros")
+    
+    // Set corners
+    matrix[0][0] <- 1
+    matrix[0][COLS-1] <- 2
+    matrix[ROWS-1][0] <- 3
+    matrix[ROWS-1][COLS-1] <- 4
+    
+    PRINT("Corners set")
+    PRINT("Top-left:", matrix[0][0])
+    PRINT("Top-right:", matrix[0][COLS-1])
+    PRINT("Bottom-left:", matrix[ROWS-1][0])
+    PRINT("Bottom-right:", matrix[ROWS-1][COLS-1])
+    
+    // Fill with pattern
+    FOR i <- 0 TO ROWS-1 DO
+        FOR j <- 0 TO COLS-1 DO
+            matrix[i][j] <- i * COLS + j
+    
+    // Sum all elements
+    sum <- 0
+    FOR i <- 0 TO ROWS-1 DO
+        FOR j <- 0 TO COLS-1 DO
+            sum <- sum + matrix[i][j]
+    
+    PRINT("Sum of all elements:", sum)
+END.

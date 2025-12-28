@@ -1,0 +1,46 @@
+// Test: Expression edge cases
+ALGORITHM ExpressionEdges
+VAR
+    a, b, c, result : INTEGER
+    r1, r2 : REAL
+BEGIN
+    // Integer division
+    a <- 10
+    b <- 3
+    result <- a DIV b
+    PRINT("10 DIV 3 =", result)
+    
+    // Modulo
+    result <- a MOD b
+    PRINT("10 MOD 3 =", result)
+    
+    // Zero modulo
+    result <- 0 MOD 5
+    PRINT("0 MOD 5 =", result)
+    
+    // Operator precedence
+    result <- 2 + 3 * 4
+    PRINT("2 + 3 * 4 =", result)
+    
+    result <- (2 + 3) * 4
+    PRINT("(2 + 3) * 4 =", result)
+    
+    // Nested expressions
+    result <- ((10 + 5) * 2) - (20 DIV 4)
+    PRINT("((10+5)*2)-(20/4) =", result)
+    
+    // Unary minus
+    a <- 5
+    result <- -a
+    PRINT("-5 =", result)
+    
+    // Double negation
+    result <- -(-a)
+    PRINT("-(-5) =", result)
+    
+    // Real number operations
+    r1 <- 3.14
+    r2 <- 2.0
+    PRINT("Pi approx:", r1)
+    PRINT("Pi * 2 =", r1 * r2)
+END.

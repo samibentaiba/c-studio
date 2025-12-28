@@ -1,0 +1,58 @@
+// Bubble Sort Algorithm
+// A simple sorting algorithm that repeatedly steps through the list,
+// compares adjacent elements and swaps them if they are in wrong order.
+// Time Complexity: O(n²)
+
+ALGORITHM BubbleSort
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    i, j, temp : INTEGER
+    swapped : BOOLEAN
+
+// Procedure to swap two elements by reference
+PROCEDURE Swap(VAR a : INTEGER, VAR b : INTEGER)
+VAR
+    temp : INTEGER
+BEGIN
+    temp <- a
+    a <- b
+    b <- temp
+END
+
+BEGIN
+    // Initialize array with sample values
+    arr[0] <- 64
+    arr[1] <- 34
+    arr[2] <- 25
+    arr[3] <- 12
+    arr[4] <- 22
+    arr[5] <- 11
+    arr[6] <- 90
+    arr[7] <- 45
+    arr[8] <- 33
+    arr[9] <- 77
+    
+    PRINT("Original array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    // Bubble Sort Algorithm
+    FOR i <- 0 TO N-2 DO
+    BEGIN
+        swapped <- FALSE
+        FOR j <- 0 TO N-2-i DO
+        BEGIN
+            IF (arr[j] > arr[j+1]) THEN
+            BEGIN
+                // Swap elements
+                Swap(arr[j], arr[j+1])
+                swapped <- TRUE
+            END
+        END
+    END
+    
+    PRINT("Sorted array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+END.

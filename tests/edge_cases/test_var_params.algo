@@ -1,0 +1,39 @@
+// Test: Procedure with VAR (by reference) parameters
+ALGORITHM VarParameters
+VAR
+    x, y : INTEGER
+
+PROCEDURE SwapValues(VAR a : INTEGER, VAR b : INTEGER)
+VAR temp : INTEGER
+BEGIN
+    temp <- a
+    a <- b
+    b <- temp
+END
+
+PROCEDURE Increment(VAR n : INTEGER)
+BEGIN
+    n <- n + 1
+END
+
+PROCEDURE Triple(VAR n : INTEGER)
+BEGIN
+    n <- n * 3
+END
+
+BEGIN
+    x <- 10
+    y <- 20
+    
+    PRINT("Before swap: x=", x, "y=", y)
+    SwapValues(x, y)
+    PRINT("After swap: x=", x, "y=", y)
+    
+    // Multiple operations
+    x <- 5
+    PRINT("Initial x:", x)
+    Increment(x)
+    PRINT("After increment:", x)
+    Triple(x)
+    PRINT("After triple:", x)
+END.

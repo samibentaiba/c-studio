@@ -1,0 +1,74 @@
+// Fibonacci Sequence Algorithm
+// Calculates Fibonacci numbers using multiple methods
+// F(n) = F(n-1) + F(n-2), where F(0) = 0, F(1) = 1
+
+ALGORITHM Fibonacci
+CONST MAX = 20
+VAR
+    n, i : INTEGER
+    fib : ARRAY[MAX] OF INTEGER
+
+// Recursive Fibonacci (slower for large n)
+FUNCTION FibRecursive(n : INTEGER) : INTEGER
+BEGIN
+    IF (n <= 0) THEN
+        RETURN(0)
+    ELSE IF (n = 1) THEN
+        RETURN(1)
+    ELSE
+        RETURN(FibRecursive(n - 1) + FibRecursive(n - 2))
+END
+
+// Iterative Fibonacci (efficient)
+FUNCTION FibIterative(n : INTEGER) : INTEGER
+VAR
+    a, b, temp, j : INTEGER
+BEGIN
+    IF (n <= 0) THEN
+        RETURN(0)
+    ELSE IF (n = 1) THEN
+        RETURN(1)
+    
+    a <- 0
+    b <- 1
+    
+    FOR j <- 2 TO n DO
+    BEGIN
+        temp <- a + b
+        a <- b
+        b <- temp
+    END
+    
+    RETURN(b)
+END
+
+// Generate Fibonacci sequence using array (memoization)
+PROCEDURE GenerateFibSequence(count : INTEGER)
+VAR
+    j : INTEGER
+BEGIN
+    fib[0] <- 0
+    fib[1] <- 1
+    
+    FOR j <- 2 TO count-1 DO
+        fib[j] <- fib[j-1] + fib[j-2]
+END
+
+BEGIN
+    PRINT("=== Fibonacci Sequence ===")
+    
+    // Using iterative method for specific values
+    PRINT("F(10) =", FibIterative(10))
+    PRINT("F(15) =", FibIterative(15))
+    
+    // Generate and display sequence
+    n <- 15
+    GenerateFibSequence(n)
+    
+    PRINT("First 15 Fibonacci numbers:")
+    FOR i <- 0 TO n-1 DO
+        PRINT("F(", i, ") =", fib[i])
+    
+    // Demonstrate recursive (only for small n due to complexity)
+    PRINT("Using recursive for F(10):", FibRecursive(10))
+END.

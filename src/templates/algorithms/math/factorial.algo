@@ -1,0 +1,46 @@
+// Factorial Algorithm
+// Calculates factorial using both iterative and recursive methods
+// n! = n × (n-1) × (n-2) × ... × 2 × 1
+
+ALGORITHM Factorial
+VAR
+    n, result : INTEGER
+
+// Recursive Factorial
+FUNCTION FactorialRecursive(n : INTEGER) : INTEGER
+BEGIN
+    IF (n <= 1) THEN
+        RETURN(1)
+    ELSE
+        RETURN(n * FactorialRecursive(n - 1))
+END
+
+// Iterative Factorial
+FUNCTION FactorialIterative(n : INTEGER) : INTEGER
+VAR
+    i, result : INTEGER
+BEGIN
+    result <- 1
+    FOR i <- 2 TO n DO
+        result <- result * i
+    RETURN(result)
+END
+
+BEGIN
+    PRINT("=== Factorial Calculator ===")
+    
+    // Test with different values
+    n <- 5
+    PRINT("Factorial of", n, "=")
+    PRINT("Recursive:", FactorialRecursive(n))
+    PRINT("Iterative:", FactorialIterative(n))
+    
+    n <- 10
+    PRINT("Factorial of", n, "=")
+    PRINT("Recursive:", FactorialRecursive(n))
+    PRINT("Iterative:", FactorialIterative(n))
+    
+    n <- 0
+    PRINT("Factorial of", n, "=")
+    PRINT("Result:", FactorialRecursive(n))
+END.

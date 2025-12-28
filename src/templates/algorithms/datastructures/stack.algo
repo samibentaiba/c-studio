@@ -1,0 +1,120 @@
+// Stack Data Structure Implementation
+// LIFO (Last In, First Out) data structure
+
+ALGORITHM StackDemo
+CONST MAX_SIZE = 100
+VAR
+    sData : ARRAY[MAX_SIZE] OF INTEGER
+    sTop : INTEGER
+    i, val : INTEGER
+
+// Initialize an empty stack
+PROCEDURE StackInit()
+BEGIN
+    sTop <- -1
+END
+
+// Check if stack is empty
+FUNCTION IsStackEmpty() : BOOLEAN
+BEGIN
+    RETURN(sTop = -1)
+END
+
+// Check if stack is full
+FUNCTION IsStackFull() : BOOLEAN
+BEGIN
+    RETURN(sTop = MAX_SIZE - 1)
+END
+
+// Push an element onto the stack
+PROCEDURE Push(v : INTEGER)
+BEGIN
+    IF (IsStackFull()) THEN
+        PRINT("Stack Overflow!")
+    ELSE
+    BEGIN
+        sTop <- sTop + 1
+        sData[sTop] <- v
+    END
+END
+
+// Pop an element from the stack
+FUNCTION Pop() : INTEGER
+VAR
+    v : INTEGER
+BEGIN
+    IF (IsStackEmpty()) THEN
+    BEGIN
+        PRINT("Stack Underflow!")
+        RETURN(-1)
+    END
+    ELSE
+    BEGIN
+        v <- sData[sTop]
+        sTop <- sTop - 1
+        RETURN(v)
+    END
+END
+
+// Peek at the top element without removing
+FUNCTION Peek() : INTEGER
+BEGIN
+    IF (IsStackEmpty()) THEN
+    BEGIN
+        PRINT("Stack is empty!")
+        RETURN(-1)
+    END
+    ELSE
+        RETURN(sData[sTop])
+END
+
+// Get the size of the stack
+FUNCTION GetStackSize() : INTEGER
+BEGIN
+    RETURN(sTop + 1)
+END
+
+// Display all elements in the stack
+PROCEDURE DisplayStack()
+VAR
+    j : INTEGER
+BEGIN
+    IF (IsStackEmpty()) THEN
+        PRINT("Stack is empty")
+    ELSE
+    BEGIN
+        PRINT("Stack elements (top to bottom):")
+        FOR j <- sTop TO 0 STEP -1 DO
+            PRINT(sData[j])
+    END
+END
+
+BEGIN
+    PRINT("=== Stack Data Structure Demo ===")
+    
+    // Initialize stack
+    StackInit()
+    
+    // Push elements
+    PRINT("Pushing: 10, 20, 30, 40, 50")
+    Push(10)
+    Push(20)
+    Push(30)
+    Push(40)
+    Push(50)
+    
+    // Display stack
+    DisplayStack()
+    
+    PRINT("Stack size:", GetStackSize())
+    PRINT("Top element:", Peek())
+    
+    // Pop elements
+    PRINT("Popping:", Pop())
+    PRINT("Popping:", Pop())
+    
+    PRINT("After popping:")
+    DisplayStack()
+    
+    PRINT("Stack size:", GetStackSize())
+END.

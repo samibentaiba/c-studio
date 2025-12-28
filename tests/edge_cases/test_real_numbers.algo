@@ -1,0 +1,42 @@
+// Test: REAL number edge cases
+ALGORITHM RealNumberEdges
+VAR
+    r1, r2, result : REAL
+    i : INTEGER
+BEGIN
+    // Zero REAL
+    r1 <- 0.0
+    PRINT("Zero real:", r1)
+    
+    // Very small REAL
+    r1 <- 0.001
+    PRINT("Small real:", r1)
+    
+    // Negative REAL
+    r1 <- -3.14159
+    PRINT("Negative pi:", r1)
+    
+    // Integer to REAL conversion
+    i <- 5
+    r1 <- 5.0
+    PRINT("Integer as real:", r1)
+    
+    // REAL arithmetic
+    r1 <- 10.5
+    r2 <- 3.5
+    result <- r1 + r2
+    PRINT("10.5 + 3.5 =", result)
+    
+    result <- r1 - r2
+    PRINT("10.5 - 3.5 =", result)
+    
+    result <- r1 * r2
+    PRINT("10.5 * 3.5 =", result)
+    
+    result <- r1 / r2
+    PRINT("10.5 / 3.5 =", result)
+    
+    // Large REAL
+    r1 <- 999999.999
+    PRINT("Large real:", r1)
+END.

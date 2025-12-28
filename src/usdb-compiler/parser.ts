@@ -379,60 +379,59 @@ export class Parser {
   }
 
   private parseStatement(): AST.Statement | null {
+    const startLoc = this.peek().location;
+    let stmt: AST.Statement | null = null;
+
     // IF statement
     if (this.check(TokenType.IF)) {
-      return this.parseIfStatement();
+      stmt = this.parseIfStatement();
     }
-
     // WHILE statement
-    if (this.check(TokenType.WHILE)) {
-      return this.parseWhileStatement();
+    else if (this.check(TokenType.WHILE)) {
+      stmt = this.parseWhileStatement();
     }
-
     // DO-WHILE statement
-    if (this.check(TokenType.DO)) {
-      return this.parseDoWhileStatement();
+    else if (this.check(TokenType.DO)) {
+      stmt = this.parseDoWhileStatement();
     }
-
     // FOR statement
-    if (this.check(TokenType.FOR)) {
-      return this.parseForStatement();
+    else if (this.check(TokenType.FOR)) {
+      stmt = this.parseForStatement();
     }
-
     // SWITCH statement
-    if (this.check(TokenType.SWITCH)) {
-      return this.parseSwitchStatement();
+    else if (this.check(TokenType.SWITCH)) {
+      stmt = this.parseSwitchStatement();
     }
-
     // RETURN statement
-    if (this.check(TokenType.RETURN)) {
-      return this.parseReturnStatement();
+    else if (this.check(TokenType.RETURN)) {
+      stmt = this.parseReturnStatement();
     }
-
     // SCAN statement
-    if (this.check(TokenType.SCAN)) {
-      return this.parseScanStatement();
+    else if (this.check(TokenType.SCAN)) {
+      stmt = this.parseScanStatement();
     }
-
     // PRINT statement
-    if (this.check(TokenType.PRINT)) {
-      return this.parsePrintStatement();
+    else if (this.check(TokenType.PRINT)) {
+      stmt = this.parsePrintStatement();
     }
-
     // BEGIN block
-    if (this.check(TokenType.BEGIN)) {
+    else if (this.check(TokenType.BEGIN)) {
       this.advance();
       const statements = this.parseStatementList();
       this.expect(TokenType.END, "Expected 'END'");
-      return { type: "BlockStatement", statements };
+      stmt = { type: "BlockStatement", statements };
     }
-
     // Assignment or procedure call
-    if (this.check(TokenType.IDENTIFIER)) {
-      return this.parseAssignmentOrCall();
+    else if (this.check(TokenType.IDENTIFIER)) {
+      stmt = this.parseAssignmentOrCall();
     }
 
-    return null;
+    if (stmt) {
+        const endLoc = this.previous().location;
+        stmt.span = { start: startLoc, end: endLoc };
+    }
+
+    return stmt;
   }
 
   private parseIfStatement(): AST.IfStatement {

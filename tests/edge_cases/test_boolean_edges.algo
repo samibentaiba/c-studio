@@ -1,0 +1,52 @@
+// Test: Boolean expressions and comparisons
+ALGORITHM BooleanEdges
+VAR
+    a, b : INTEGER
+    t, f : BOOLEAN
+BEGIN
+    a <- 5
+    b <- 5
+    
+    // Equality tests
+    IF (a = b) THEN
+        PRINT("a = b: TRUE")
+    ELSE
+        PRINT("a = b: FALSE")
+    
+    // Inequality tests
+    IF (a <> b) THEN
+        PRINT("a <> b: TRUE")
+    ELSE
+        PRINT("a <> b: FALSE")
+    
+    // Boundary comparisons
+    IF (a >= b) THEN
+        PRINT("a >= b: TRUE")
+    
+    IF (a <= b) THEN
+        PRINT("a <= b: TRUE")
+    
+    // Zero comparisons
+    a <- 0
+    IF (a = 0) THEN
+        PRINT("Zero comparison works")
+    
+    // Negative comparisons
+    a <- -5
+    b <- 5
+    IF (a < b) THEN
+        PRINT("-5 < 5: TRUE")
+    
+    IF (a < 0) THEN
+        PRINT("Negative check works")
+    
+    // Boolean variables
+    t <- TRUE
+    f <- FALSE
+    
+    IF (t) THEN
+        PRINT("TRUE is truthy")
+    
+    IF (NOT f) THEN
+        PRINT("NOT FALSE is TRUE")
+END.

@@ -1,0 +1,57 @@
+// Test: FOR loop with STEP edge cases
+ALGORITHM ForStepEdges
+VAR
+    i, count : INTEGER
+BEGIN
+    PRINT("=== FOR STEP Tests ===")
+    
+    // Positive step
+    PRINT("Step 2 (0 to 10):")
+    count <- 0
+    FOR i <- 0 TO 10 STEP 2 DO
+    BEGIN
+        PRINT(i)
+        count <- count + 1
+    END
+    PRINT("Iterations:", count)
+    
+    // Step 3
+    PRINT("Step 3 (0 to 12):")
+    count <- 0
+    FOR i <- 0 TO 12 STEP 3 DO
+    BEGIN
+        PRINT(i)
+        count <- count + 1
+    END
+    PRINT("Iterations:", count)
+    
+    // Negative step (counting down)
+    PRINT("Step -1 (10 to 0):")
+    count <- 0
+    FOR i <- 10 TO 0 STEP -1 DO
+    BEGIN
+        PRINT(i)
+        count <- count + 1
+    END
+    PRINT("Iterations:", count)
+    
+    // Large step
+    PRINT("Step 5 (0 to 20):")
+    count <- 0
+    FOR i <- 0 TO 20 STEP 5 DO
+    BEGIN
+        PRINT(i)
+        count <- count + 1
+    END
+    PRINT("Iterations:", count)
+    
+    // Step equals range
+    PRINT("Step 10 (0 to 10):")
+    count <- 0
+    FOR i <- 0 TO 10 STEP 10 DO
+    BEGIN
+        PRINT(i)
+        count <- count + 1
+    END
+    PRINT("Iterations:", count)
+END.

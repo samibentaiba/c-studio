@@ -480,6 +480,66 @@ export class CodeGenerator {
     const args = expr.arguments
       .map((a) => this.generateExpression(a))
       .join(", ");
+    
+    // Handle built-in math functions
+    const funcName = expr.name.toUpperCase();
+    const builtInFunctions: Record<string, string> = {
+      // Absolute value
+      "ABS": "fabs",
+      // Square root
+      "SQRT": "sqrt",
+      // Power
+      "POW": "pow",
+      "POWER": "pow",
+      // Min/Max (use ternary for C)
+      "MIN": "__MIN__",
+      "MAX": "__MAX__",
+      // Rounding
+      "FLOOR": "floor",
+      "CEIL": "ceil",
+      "ROUND": "round",
+      "TRUNC": "trunc",
+      // Logarithms
+      "LOG": "log",
+      "LOG10": "log10",
+      "LOG2": "log2",
+      "LN": "log",
+      "EXP": "exp",
+      // Trigonometric
+      "SIN": "sin",
+      "COS": "cos",
+      "TAN": "tan",
+      "ASIN": "asin",
+      "ACOS": "acos",
+      "ATAN": "atan",
+      "ATAN2": "atan2",
+      // Hyperbolic
+      "SINH": "sinh",
+      "COSH": "cosh",
+      "TANH": "tanh",
+      // Other
+      "RANDOM": "rand",
+      "RANDOMIZE": "srand",
+    };
+    
+    if (builtInFunctions[funcName]) {
+      const cFunc = builtInFunctions[funcName];
+      
+      // Special handling for MIN/MAX (use ternary operators)
+      if (cFunc === "__MIN__" && expr.arguments.length >= 2) {
+        const a = this.generateExpression(expr.arguments[0]);
+        const b = this.generateExpression(expr.arguments[1]);
+        return `((${a}) < (${b}) ? (${a}) : (${b}))`;
+      }
+      if (cFunc === "__MAX__" && expr.arguments.length >= 2) {
+        const a = this.generateExpression(expr.arguments[0]);
+        const b = this.generateExpression(expr.arguments[1]);
+        return `((${a}) > (${b}) ? (${a}) : (${b}))`;
+      }
+      
+      return `${cFunc}(${args})`;
+    }
+    
     return `${expr.name}(${args})`;
   }
 

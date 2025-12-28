@@ -1,0 +1,48 @@
+// Test: Constants edge cases
+ALGORITHM ConstantsEdges
+CONST
+    ZERO = 0
+    ONE = 1
+    NEGATIVE = -100
+    LARGE = 1000000
+    PI_APPROX = 3
+    MAX_SIZE = 10
+VAR
+    arr : ARRAY[MAX_SIZE] OF INTEGER
+    i, sum : INTEGER
+BEGIN
+    PRINT("=== Constants Tests ===")
+    
+    // Using constants in expressions
+    PRINT("ZERO:", ZERO)
+    PRINT("ONE:", ONE)
+    PRINT("NEGATIVE:", NEGATIVE)
+    PRINT("LARGE:", LARGE)
+    
+    // Arithmetic with constants
+    PRINT("ZERO + ONE =", ZERO + ONE)
+    PRINT("LARGE - ONE =", LARGE - ONE)
+    PRINT("NEGATIVE * -1 =", NEGATIVE * -1)
+    
+    // Constants as array size
+    FOR i <- 0 TO MAX_SIZE-1 DO
+        arr[i] <- i * PI_APPROX
+    
+    sum <- 0
+    FOR i <- 0 TO MAX_SIZE-1 DO
+        sum <- sum + arr[i]
+    
+    PRINT("Sum of array:", sum)
+    
+    // Constants in conditions
+    i <- 5
+    IF (i > ZERO) THEN
+        PRINT("i > ZERO")
+    
+    IF (i < LARGE) THEN
+        PRINT("i < LARGE")
+    
+    // Loop with constant bounds
+    FOR i <- ONE TO PI_APPROX DO
+        PRINT("Iteration:", i)
+END.

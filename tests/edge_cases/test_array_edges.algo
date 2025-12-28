@@ -1,0 +1,26 @@
+// Test: Array edge cases
+ALGORITHM ArrayEdgeCases
+CONST N = 5
+VAR
+    arr : ARRAY[N] OF INTEGER
+    i : INTEGER
+BEGIN
+    // Test index 0 (first element)
+    arr[0] <- 100
+    PRINT("First element (index 0):", arr[0])
+    
+    // Test last index (N-1)
+    arr[N-1] <- 500
+    PRINT("Last element (index N-1):", arr[N-1])
+    
+    // Fill entire array
+    FOR i <- 0 TO N-1 DO
+        arr[i] <- i * 10
+    
+    PRINT("Array contents:")
+    FOR i <- 0 TO N-1 DO
+        PRINT("arr[", i, "] =", arr[i])
+    
+    // Single element array access
+    PRINT("Middle element:", arr[N DIV 2])
+END.

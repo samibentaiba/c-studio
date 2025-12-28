@@ -1,0 +1,70 @@
+// Binary Search Algorithm
+// Searches for an element in a SORTED array using divide and conquer.
+// Time Complexity: O(log n)
+
+ALGORITHM BinarySearch
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    target, i, result : INTEGER
+
+// Recursive Binary Search
+FUNCTION BinarySearchRec(t : INTEGER, left : INTEGER, right : INTEGER) : INTEGER
+VAR
+    mid : INTEGER
+BEGIN
+    IF (left > right) THEN
+        RETURN(-1)
+    
+    mid <- (left + right) DIV 2
+    
+    IF (arr[mid] = t) THEN
+        RETURN(mid)
+    ELSE IF (arr[mid] < t) THEN
+        RETURN(BinarySearchRec(t, mid + 1, right))
+    ELSE
+        RETURN(BinarySearchRec(t, left, mid - 1))
+END
+
+BEGIN
+    // Initialize SORTED array (required for binary search)
+    arr[0] <- 2
+    arr[1] <- 5
+    arr[2] <- 8
+    arr[3] <- 12
+    arr[4] <- 16
+    arr[5] <- 23
+    arr[6] <- 38
+    arr[7] <- 56
+    arr[8] <- 72
+    arr[9] <- 91
+    
+    PRINT("Sorted array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    // Search for different values
+    target <- 23
+    PRINT("Searching for:", target)
+    result <- BinarySearchRec(target, 0, N-1)
+    IF (result <> -1) THEN
+        PRINT("Element found at index:", result)
+    ELSE
+        PRINT("Element not found")
+    
+    target <- 56
+    PRINT("Searching for:", target)
+    result <- BinarySearchRec(target, 0, N-1)
+    IF (result <> -1) THEN
+        PRINT("Element found at index:", result)
+    ELSE
+        PRINT("Element not found")
+    
+    target <- 100
+    PRINT("Searching for:", target)
+    result <- BinarySearchRec(target, 0, N-1)
+    IF (result <> -1) THEN
+        PRINT("Element found at index:", result)
+    ELSE
+        PRINT("Element not found")
+END.

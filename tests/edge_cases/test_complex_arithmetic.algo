@@ -1,0 +1,58 @@
+// Test: Complex arithmetic expressions
+ALGORITHM ComplexArithmetic
+VAR
+    a, b, c, d, result : INTEGER
+    r1, r2 : REAL
+BEGIN
+    PRINT("=== Complex Arithmetic ===")
+    
+    a <- 10
+    b <- 3
+    c <- 7
+    d <- 2
+    
+    // Multiple operators
+    result <- a + b - c
+    PRINT("10 + 3 - 7 =", result)
+    
+    result <- a * b + c * d
+    PRINT("10*3 + 7*2 =", result)
+    
+    result <- a * (b + c)
+    PRINT("10 * (3+7) =", result)
+    
+    result <- (a + b) * (c - d)
+    PRINT("(10+3) * (7-2) =", result)
+    
+    // DIV and MOD combinations
+    result <- a DIV b + a MOD b
+    PRINT("10 DIV 3 + 10 MOD 3 =", result)
+    
+    result <- (a + b) DIV c
+    PRINT("(10+3) DIV 7 =", result)
+    
+    // Nested parentheses
+    result <- ((a + b) * c) DIV d
+    PRINT("((10+3)*7) DIV 2 =", result)
+    
+    result <- a - (b - (c - d))
+    PRINT("10 - (3 - (7 - 2)) =", result)
+    
+    // Power-like calculations using multiplication
+    result <- a * a * a
+    PRINT("10^3 =", result)
+    
+    // Mixed with negative
+    result <- -a + b * c
+    PRINT("-10 + 3*7 =", result)
+    
+    result <- a * -b + c
+    PRINT("10 * -3 + 7 =", result)
+    
+    // Chained operations
+    result <- a + b + c + d
+    PRINT("10+3+7+2 =", result)
+    
+    result <- a * b * c * d
+    PRINT("10*3*7*2 =", result)
+END.

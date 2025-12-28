@@ -14,6 +14,7 @@ import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { FileSystemItem } from "../types";
 import { cn } from "../lib/utils";
+import { useShortcut } from "../ShortcutContext";
 
 interface SidebarProps {
   files: FileSystemItem[];
@@ -62,6 +63,117 @@ export function Sidebar({
   const [newItemName, setNewItemName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  const { registerShortcut } = useShortcut();
+
+  React.useEffect(() => {
+    const unsubs = [
+      registerShortcut("Ctrl+Shift+N", (e) => {
+        e.preventDefault();
+        setCreatingState({ type: "folder" });
+      }),
+      registerShortcut("Ctrl+Shift+E", (e) => {
+        e.preventDefault();
+        sidebarRef.current?.focus();
+      }),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, [registerShortcut]);
+
+  // Sync active file with focus when active changes, but only if we don't have focus
+  React.useEffect(() => {
+    if (activeFileId) {
+       setFocusedId(activeFileId);
+    }
+  }, [activeFileId]);
+
+  // Recursively get visible items
+  const getVisibleItems = (items: FileSystemItem[]): FileSystemItem[] => {
+    let visible: FileSystemItem[] = [];
+    for (const item of items) {
+      visible.push(item);
+      if (item.type === "folder" && item.isOpen && item.children) {
+        visible = [...visible, ...getVisibleItems(item.children)];
+      }
+    }
+    return visible;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // If renaming or creating, don't interfere
+    if (renamingId || creatingState) return;
+
+    const visibleItems = getVisibleItems(files);
+    const currentIndex = visibleItems.findIndex(item => item.id === focusedId);
+    
+    // If nothing focused, focus first item
+    if (currentIndex === -1 && visibleItems.length > 0) {
+        setFocusedId(visibleItems[0].id);
+        return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (currentIndex < visibleItems.length - 1) {
+        setFocusedId(visibleItems[currentIndex + 1].id);
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (currentIndex > 0) {
+        setFocusedId(visibleItems[currentIndex - 1].id);
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const item = visibleItems[currentIndex];
+      if (item) {
+        if (item.type === "folder") {
+          onToggleFolder(item.id);
+        } else {
+          onFileSelect(item);
+        }
+      }
+    } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const item = visibleItems[currentIndex];
+        if (item && item.type === "folder") {
+            if (!item.isOpen) {
+                onToggleFolder(item.id);
+            } else {
+                // Move to first child if available
+                 if (currentIndex < visibleItems.length - 1) {
+                    setFocusedId(visibleItems[currentIndex + 1].id);
+                }
+            }
+        }
+    } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const item = visibleItems[currentIndex];
+        if (item) {
+             if (item.type === "folder" && item.isOpen) {
+                onToggleFolder(item.id);
+            } else {
+                // Move to parent
+                // Find parent by structure
+                const findParent = (items: FileSystemItem[], targetId: string, parent: FileSystemItem | null = null): FileSystemItem | null => {
+                    for (const it of items) {
+                        if (it.id === targetId) return parent;
+                        if (it.children) {
+                            const found = findParent(it.children, targetId, it);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                const parent = findParent(files, item.id);
+                if (parent) {
+                    setFocusedId(parent.id);
+                }
+            }
+        }
+    }
+  };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +201,8 @@ export function Sidebar({
             "text-[#CCCCCC] hover:bg-[#2A2D2E] hover:text-white",
             // Active state: Darker gray bg, white text
             activeFileId === item.id && "bg-[#37373D] text-white",
+            // Focused state outline
+            focusedId === item.id && "ring-1 ring-inset ring-blue-500",
             depth > 0 && "ml-4" // Simple indentation
           )}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
@@ -257,7 +371,7 @@ export function Sidebar({
 
   return (
     <div
-      className="h-full w-full flex flex-col"
+      className="h-full w-full flex flex-col outline-none focus:ring-1 focus:ring-blue-500/50"
       style={{
         backgroundColor: "var(--theme-bg)",
         borderRight: "1px solid var(--theme-border)",
@@ -268,6 +382,10 @@ export function Sidebar({
         const sourceId = e.dataTransfer.getData("text/plain");
         onMoveFile(sourceId, null);
       }}
+      tabIndex={0}
+      ref={sidebarRef}
+      onKeyDown={handleKeyDown}
+      data-testid="sidebar"
     >
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2 text-primary">
@@ -280,7 +398,8 @@ export function Sidebar({
             size="icon"
             className="h-6 w-6"
             onClick={() => setCreatingState({ type: "file" })}
-            title="New File"
+            title="New File (Ctrl+N)"
+            data-testid="btn-new-file"
           >
             <FilePlus size={16} />
           </Button>
@@ -289,7 +408,8 @@ export function Sidebar({
             size="icon"
             className="h-6 w-6"
             onClick={() => setCreatingState({ type: "folder" })}
-            title="New Folder"
+            title="New Folder (Ctrl+Shift+N)"
+            data-testid="btn-new-folder"
           >
             <FolderPlus size={16} />
           </Button>

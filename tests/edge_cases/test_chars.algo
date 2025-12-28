@@ -1,0 +1,41 @@
+// Test: CHARACTER edge cases
+ALGORITHM CharEdges
+VAR
+    c1, c2 : CHAR
+BEGIN
+    // Normal characters
+    c1 <- 'A'
+    PRINT("Char A:", c1)
+    
+    c1 <- 'z'
+    PRINT("Char z:", c1)
+    
+    // Digit character
+    c1 <- '0'
+    PRINT("Digit char:", c1)
+    
+    c1 <- '9'
+    PRINT("Digit 9:", c1)
+    
+    // Space character
+    c1 <- ' '
+    PRINT("Space char:", c1)
+    
+    // Special characters
+    c1 <- '@'
+    PRINT("At symbol:", c1)
+    
+    c1 <- '#'
+    PRINT("Hash:", c1)
+    
+    // Comparison
+    c1 <- 'A'
+    c2 <- 'B'
+    IF (c1 < c2) THEN
+        PRINT("A < B is true")
+    
+    // Same character
+    c2 <- 'A'
+    IF (c1 = c2) THEN
+        PRINT("A = A is true")
+END.

@@ -1,0 +1,6 @@
+// Test: Single statement
+ALGORITHM SingleStatement
+VAR x : INTEGER
+BEGIN
+    x <- 42
+END.

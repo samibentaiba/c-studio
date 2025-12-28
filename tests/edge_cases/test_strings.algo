@@ -1,0 +1,29 @@
+// Test: String edge cases
+ALGORITHM StringEdges
+VAR
+    empty : STRING
+    single : STRING
+    normal : STRING
+    special : STRING
+BEGIN
+    // Normal string
+    normal <- "Hello World"
+    PRINT(normal)
+    
+    // String with only spaces (conceptual - parser may handle differently)
+    single <- "A"
+    PRINT("Single char string:", single)
+    
+    // Special characters in strings
+    special <- "Tab and newline chars"
+    PRINT(special)
+    
+    // String literals in print
+    PRINT("Direct string literal")
+    PRINT("Multiple", "strings", "in", "one", "print")
+    
+    // Mixing types in print
+    PRINT("Number:", 42)
+    PRINT("Boolean:", TRUE)
+    PRINT("Real:", 3.14)
+END.

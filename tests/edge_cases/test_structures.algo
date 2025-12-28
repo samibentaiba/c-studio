@@ -1,0 +1,39 @@
+// Test: Structure and type edge cases
+ALGORITHM StructureEdges
+TYPE
+    Point = STRUCTURE
+    BEGIN
+        x : INTEGER
+        y : INTEGER
+    END
+    
+    Person = STRUCTURE
+    BEGIN
+        age : INTEGER
+        name : STRING
+    END
+
+VAR
+    p1, p2 : Point
+    person : Person
+BEGIN
+    // Initialize structure with zeros
+    p1.x <- 0
+    p1.y <- 0
+    PRINT("Origin point:", p1.x, p1.y)
+    
+    // Negative coordinates
+    p2.x <- -10
+    p2.y <- -20
+    PRINT("Negative point:", p2.x, p2.y)
+    
+    // Copy structure values
+    p1.x <- p2.x
+    p1.y <- p2.y
+    PRINT("Copied point:", p1.x, p1.y)
+    
+    // String in structure
+    person.age <- 25
+    person.name <- "Test"
+    PRINT("Person:", person.name, person.age)
+END.

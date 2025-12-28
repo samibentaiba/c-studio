@@ -1,0 +1,21 @@
+// Test: Boundary values for integers
+ALGORITHM BoundaryValues
+VAR
+    zero, one, negative, large : INTEGER
+BEGIN
+    zero <- 0
+    one <- 1
+    negative <- -1
+    large <- 999999
+    
+    PRINT("Zero:", zero)
+    PRINT("One:", one)
+    PRINT("Negative:", negative)
+    PRINT("Large:", large)
+    
+    // Arithmetic with boundaries
+    PRINT("0 + 1 =", zero + one)
+    PRINT("0 - 1 =", zero - one)
+    PRINT("0 * 100 =", zero * 100)
+    PRINT("-1 * -1 =", negative * negative)
+END.

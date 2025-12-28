@@ -1,0 +1,40 @@
+// Test: Recursive functions edge cases
+ALGORITHM RecursionEdges
+VAR result : INTEGER
+
+// Factorial with edge cases
+FUNCTION Factorial(n : INTEGER) : INTEGER
+BEGIN
+    IF (n <= 1) THEN
+        RETURN(1)
+    ELSE
+        RETURN(n * Factorial(n - 1))
+END
+
+// Fibonacci with base cases
+FUNCTION Fib(n : INTEGER) : INTEGER
+BEGIN
+    IF (n <= 0) THEN
+        RETURN(0)
+    ELSE IF (n = 1) THEN
+        RETURN(1)
+    ELSE
+        RETURN(Fib(n-1) + Fib(n-2))
+END
+
+BEGIN
+    // 0! = 1
+    PRINT("0! =", Factorial(0))
+    
+    // 1! = 1
+    PRINT("1! =", Factorial(1))
+    
+    // 5! = 120
+    PRINT("5! =", Factorial(5))
+    
+    // Fibonacci base cases
+    PRINT("F(0) =", Fib(0))
+    PRINT("F(1) =", Fib(1))
+    PRINT("F(2) =", Fib(2))
+    PRINT("F(5) =", Fib(5))
+END.

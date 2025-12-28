@@ -253,6 +253,7 @@ export function MonacoEditor({
             variant="secondary"
             size="sm"
             className="text-xs"
+            title="Format Code (Shift+Alt+F)"
           >
             Format
           </Button>
@@ -264,6 +265,7 @@ export function MonacoEditor({
                 variant="outline"
                 size="sm"
                 className="text-xs"
+                title="Translate Code (Ctrl+T)"
               >
                 <ArrowRightLeft size={14} className="mr-1" />
                 {activeFile.name.endsWith(".algo") ? "To C" : "To Algo"}
@@ -278,6 +280,7 @@ export function MonacoEditor({
                 : "bg-green-600 hover:bg-green-700 text-white"
             }
             size="sm"
+            title="Run Code (F5)"
           >
             {isCompiling ? (
               "Running..."

@@ -1,0 +1,96 @@
+// Matrix Operations Algorithm
+// Common matrix operations: addition, multiplication, transpose
+
+ALGORITHM MatrixOperations
+CONST N = 3
+VAR
+    A, B, C : ARRAY[N][N] OF INTEGER
+    i, j, k, sum : INTEGER
+
+// Initialize a matrix with values
+PROCEDURE InitMatrix(startVal : INTEGER)
+VAR
+    ii, jj : INTEGER
+BEGIN
+    FOR ii <- 0 TO N-1 DO
+        FOR jj <- 0 TO N-1 DO
+            A[ii][jj] <- startVal + ii * N + jj
+END
+
+// Display matrix A
+PROCEDURE PrintMatrixA()
+VAR
+    ii, jj : INTEGER
+BEGIN
+    PRINT("Matrix A:")
+    FOR ii <- 0 TO N-1 DO
+    BEGIN
+        FOR jj <- 0 TO N-1 DO
+            PRINT(A[ii][jj])
+    END
+END
+
+// Matrix Addition: C = A + B
+PROCEDURE MatrixAdd()
+VAR
+    ii, jj : INTEGER
+BEGIN
+    FOR ii <- 0 TO N-1 DO
+        FOR jj <- 0 TO N-1 DO
+            C[ii][jj] <- A[ii][jj] + B[ii][jj]
+END
+
+// Matrix Transpose: C = A^T
+PROCEDURE MatrixTranspose()
+VAR
+    ii, jj : INTEGER
+BEGIN
+    FOR ii <- 0 TO N-1 DO
+        FOR jj <- 0 TO N-1 DO
+            C[ii][jj] <- A[jj][ii]
+END
+
+// Calculate trace (sum of diagonal elements)
+FUNCTION MatrixTrace() : INTEGER
+VAR
+    ii, trace : INTEGER
+BEGIN
+    trace <- 0
+    FOR ii <- 0 TO N-1 DO
+        trace <- trace + A[ii][ii]
+    RETURN(trace)
+END
+
+// Display matrix C
+PROCEDURE PrintResult()
+VAR
+    ii, jj : INTEGER
+BEGIN
+    PRINT("Result matrix:")
+    FOR ii <- 0 TO N-1 DO
+    BEGIN
+        FOR jj <- 0 TO N-1 DO
+            PRINT(C[ii][jj])
+    END
+END
+
+BEGIN
+    PRINT("=== Matrix Operations Demo ===")
+    
+    // Initialize matrix A
+    InitMatrix(1)
+    PrintMatrixA()
+    
+    // Initialize matrix B with different values
+    FOR i <- 0 TO N-1 DO
+        FOR j <- 0 TO N-1 DO
+            B[i][j] <- 10 + i * N + j
+    
+    // Transpose
+    MatrixTranspose()
+    PRINT("A Transpose:")
+    PrintResult()
+    
+    // Trace
+    PRINT("Trace of A:", MatrixTrace())
+END.

@@ -1,0 +1,134 @@
+// Queue Data Structure Implementation
+// FIFO (First In, First Out) data structure
+
+ALGORITHM QueueDemo
+CONST MAX_SIZE = 100
+VAR
+    qData : ARRAY[MAX_SIZE] OF INTEGER
+    qFront, qRear, qSize : INTEGER
+    i, val : INTEGER
+
+// Initialize an empty queue
+PROCEDURE QueueInit()
+BEGIN
+    qFront <- 0
+    qRear <- -1
+    qSize <- 0
+END
+
+// Check if queue is empty
+FUNCTION IsQueueEmpty() : BOOLEAN
+BEGIN
+    RETURN(qSize = 0)
+END
+
+// Check if queue is full
+FUNCTION IsQueueFull() : BOOLEAN
+BEGIN
+    RETURN(qSize = MAX_SIZE)
+END
+
+// Enqueue - Add element to rear
+PROCEDURE Enqueue(v : INTEGER)
+BEGIN
+    IF (IsQueueFull()) THEN
+        PRINT("Queue Overflow!")
+    ELSE
+    BEGIN
+        qRear <- (qRear + 1) MOD MAX_SIZE
+        qData[qRear] <- v
+        qSize <- qSize + 1
+    END
+END
+
+// Dequeue - Remove element from front
+FUNCTION Dequeue() : INTEGER
+VAR
+    v : INTEGER
+BEGIN
+    IF (IsQueueEmpty()) THEN
+    BEGIN
+        PRINT("Queue Underflow!")
+        RETURN(-1)
+    END
+    ELSE
+    BEGIN
+        v <- qData[qFront]
+        qFront <- (qFront + 1) MOD MAX_SIZE
+        qSize <- qSize - 1
+        RETURN(v)
+    END
+END
+
+// Peek at front element without removing
+FUNCTION GetFront() : INTEGER
+BEGIN
+    IF (IsQueueEmpty()) THEN
+    BEGIN
+        PRINT("Queue is empty!")
+        RETURN(-1)
+    END
+    ELSE
+        RETURN(qData[qFront])
+END
+
+// Get the size of the queue
+FUNCTION GetQueueSize() : INTEGER
+BEGIN
+    RETURN(qSize)
+END
+
+// Display all elements in the queue
+PROCEDURE DisplayQueue()
+VAR
+    j, idx : INTEGER
+BEGIN
+    IF (IsQueueEmpty()) THEN
+        PRINT("Queue is empty")
+    ELSE
+    BEGIN
+        PRINT("Queue elements (front to rear):")
+        idx <- qFront
+        FOR j <- 1 TO qSize DO
+        BEGIN
+            PRINT(qData[idx])
+            idx <- (idx + 1) MOD MAX_SIZE
+        END
+    END
+END
+
+BEGIN
+    PRINT("=== Queue Data Structure Demo ===")
+    
+    // Initialize queue
+    QueueInit()
+    
+    // Enqueue elements
+    PRINT("Enqueueing: 10, 20, 30, 40, 50")
+    Enqueue(10)
+    Enqueue(20)
+    Enqueue(30)
+    Enqueue(40)
+    Enqueue(50)
+    
+    // Display queue
+    DisplayQueue()
+    
+    PRINT("Queue size:", GetQueueSize())
+    PRINT("Front element:", GetFront())
+    
+    // Dequeue elements
+    PRINT("Dequeueing:", Dequeue())
+    PRINT("Dequeueing:", Dequeue())
+    
+    PRINT("After dequeueing:")
+    DisplayQueue()
+    
+    // Enqueue more
+    PRINT("Enqueueing: 60, 70")
+    Enqueue(60)
+    Enqueue(70)
+    
+    DisplayQueue()
+    PRINT("Queue size:", GetQueueSize())
+END.

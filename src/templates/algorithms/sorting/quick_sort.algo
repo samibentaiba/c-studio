@@ -1,0 +1,77 @@
+// Quick Sort Algorithm
+// Divide and conquer sorting algorithm using partitioning.
+// Time Complexity: O(n log n) average, O(n²) worst case
+
+ALGORITHM QuickSort
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    i : INTEGER
+
+PROCEDURE Swap(VAR a : INTEGER, VAR b : INTEGER)
+VAR
+    temp : INTEGER
+BEGIN
+    temp <- a
+    a <- b
+    b <- temp
+END
+
+// Partition function - places pivot at correct position
+FUNCTION Partition(low : INTEGER, high : INTEGER) : INTEGER
+VAR
+    pivot, i, j : INTEGER
+BEGIN
+    pivot <- arr[high]
+    i <- low - 1
+    
+    FOR j <- low TO high - 1 DO
+    BEGIN
+        IF (arr[j] < pivot) THEN
+        BEGIN
+            i <- i + 1
+            Swap(arr[i], arr[j])
+        END
+    END
+    
+    Swap(arr[i + 1], arr[high])
+    RETURN(i + 1)
+END
+
+// Recursive QuickSort procedure
+PROCEDURE QuickSortRec(low : INTEGER, high : INTEGER)
+VAR
+    pi : INTEGER
+BEGIN
+    IF (low < high) THEN
+    BEGIN
+        pi <- Partition(low, high)
+        QuickSortRec(low, pi - 1)
+        QuickSortRec(pi + 1, high)
+    END
+END
+
+BEGIN
+    // Initialize array
+    arr[0] <- 10
+    arr[1] <- 7
+    arr[2] <- 8
+    arr[3] <- 9
+    arr[4] <- 1
+    arr[5] <- 5
+    arr[6] <- 3
+    arr[7] <- 6
+    arr[8] <- 4
+    arr[9] <- 2
+    
+    PRINT("Original array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    // Perform Quick Sort
+    QuickSortRec(0, N-1)
+    
+    PRINT("Sorted array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+END.

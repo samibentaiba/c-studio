@@ -8,6 +8,13 @@ interface TranslationResult {
   algoCode: string;
   warnings: string[];
   errors: string[];
+
+  sourceMap: number[]; // index = algo line, value = c line
+}
+
+interface SourceLine {
+  code: string;
+  cLine: number;
 }
 
 interface Variable {
@@ -27,9 +34,12 @@ export function translateCToAlgo(
   const variables: Variable[] = [];
   const constants: { name: string; value: string }[] = [];
   const types: string[] = []; // STRUCTURE and enum type declarations
-  const functions: string[] = [];
-  const mainBody: string[] = [];
+  const functions: SourceLine[][] = []; // Array of function bodies
+  const mainBody: SourceLine[] = [];
   const processedIncludes = new Set<string>();
+
+  // Helper track current line number for algo generation
+  let currentAlgoLine = 0;
 
   // Expand local includes recursively
   const expandedCode = expandIncludes(
@@ -43,7 +53,7 @@ export function translateCToAlgo(
   let inMain = false;
   let inFunction = false;
   let currentFunctionName = "";
-  let currentFunctionBody: string[] = [];
+  let currentFunctionBody: SourceLine[] = [];
   let currentFunctionParams: string[] = [];
   let currentFunctionReturnType = "";
   let braceCount = 0;
@@ -140,7 +150,9 @@ export function translateCToAlgo(
             currentFunctionName,
             currentFunctionReturnType,
             currentFunctionParams,
-            currentFunctionBody
+            currentFunctionBody,
+            // We can approximate cLine for function start/end using current line i
+             i 
           )
         );
         inFunction = false;
@@ -154,10 +166,11 @@ export function translateCToAlgo(
     if (inMain || inFunction) {
       const translated = translateStatement(line, typeMap, variables, warnings);
       if (translated) {
+        const sourceLine: SourceLine = { code: translated, cLine: i };
         if (inMain) {
-          mainBody.push(translated);
+          mainBody.push(sourceLine);
         } else {
-          currentFunctionBody.push(translated);
+          currentFunctionBody.push(sourceLine);
         }
       }
     } else {
@@ -175,59 +188,78 @@ export function translateCToAlgo(
     }
   }
 
-  // Generate Algo code
-  let algoCode = `ALGORITHM ${algorithmName}\n`;
+  // Output Algo Code with Source Map construction
+  let linesAccumulator: SourceLine[] = [];
+  
+  // Header
+  linesAccumulator.push({ code: `ALGORITHM ${algorithmName}`, cLine: -1 });
 
   // Constants
   if (constants.length > 0) {
-    algoCode += "\nCONST\n";
+    linesAccumulator.push({ code: "", cLine: -1 });
+    linesAccumulator.push({ code: "CONST", cLine: -1 });
     for (const c of constants) {
-      algoCode += `    ${c.name} = ${c.value}\n`;
+      linesAccumulator.push({ code: `    ${c.name} = ${c.value}`, cLine: -1 });
     }
   }
 
-  // Types (structures and enums)
+  // Types
   if (types.length > 0) {
-    algoCode += "\nTYPE\n";
+    linesAccumulator.push({ code: "", cLine: -1 });
+    linesAccumulator.push({ code: "TYPE", cLine: -1 });
     for (const t of types) {
-      algoCode += t + "\n";
+      // Types are multiline strings, split them
+      t.split("\n").forEach(l => linesAccumulator.push({ code: l, cLine: -1 }));
     }
   }
 
   // Variables
   if (variables.length > 0) {
-    algoCode += "\nVAR\n";
+    linesAccumulator.push({ code: "", cLine: -1 });
+    linesAccumulator.push({ code: "VAR", cLine: -1 });
     const grouped = groupVariablesByType(variables);
     for (const [type, vars] of Object.entries(grouped)) {
       const simpleVars = vars.filter((v) => !v.isArray).map((v) => v.name);
       const arrayVars = vars.filter((v) => v.isArray);
 
       if (simpleVars.length > 0) {
-        algoCode += `    ${simpleVars.join(", ")} : ${type}\n`;
+        linesAccumulator.push({ code: `    ${simpleVars.join(", ")} : ${type}`, cLine: -1 });
       }
       for (const av of arrayVars) {
-        algoCode += `    ${av.name} : ARRAY[${av.arraySize}] OF ${type}\n`;
+        linesAccumulator.push({ code: `    ${av.name} : ARRAY[${av.arraySize}] OF ${type}`, cLine: -1 });
       }
     }
   }
 
   // Functions
-  for (const func of functions) {
-    algoCode += "\n" + func + "\n";
+  for (const funcLines of functions) {
+    linesAccumulator.push({ code: "", cLine: -1 });
+    linesAccumulator.push(...funcLines);
   }
 
   // Main body
-  algoCode += "\nBEGIN\n";
+  linesAccumulator.push({ code: "", cLine: -1 });
+  linesAccumulator.push({ code: "BEGIN", cLine: -1 });
   for (const stmt of mainBody) {
-    algoCode += "    " + stmt + "\n";
+    linesAccumulator.push({ code: "    " + stmt.code, cLine: stmt.cLine });
   }
-  algoCode += "END.\n";
+  linesAccumulator.push({ code: "END.", cLine: -1 });
+
+  // Generate final code and map
+  let finalCode = "";
+  const sourceMap: number[] = [];
+  
+  linesAccumulator.forEach((line, index) => {
+    finalCode += line.code + "\n";
+    sourceMap.push(line.cLine);
+  });
 
   return {
     success: errors.length === 0,
-    algoCode,
+    algoCode: finalCode,
     warnings,
     errors,
+    sourceMap,
   };
 }
 
@@ -533,20 +565,25 @@ function generateAlgoFunction(
   name: string,
   returnType: string,
   params: string[],
-  body: string[]
-): string {
+  body: SourceLine[],
+  endLine: number
+): SourceLine[] {
   const paramStr = params.join(", ");
   const isProc = returnType === "VOID";
+  const result: SourceLine[] = [];
 
-  let result = isProc
-    ? `PROCEDURE ${name}(${paramStr})\n`
-    : `FUNCTION ${name}(${paramStr}) : ${returnType}\n`;
-
-  result += "BEGIN\n";
+  const header = isProc
+    ? `PROCEDURE ${name}(${paramStr})`
+    : `FUNCTION ${name}(${paramStr}) : ${returnType}`;
+  
+  result.push({ code: header, cLine: -1 }); // Header doesn't map perfectly to one line usually
+  result.push({ code: "VAR", cLine: -1 }); // Implicit VAR block
+  result.push({ code: "BEGIN", cLine: -1 });
+  
   for (const stmt of body) {
-    result += "    " + stmt + "\n";
+    result.push({ code: "    " + stmt.code, cLine: stmt.cLine });
   }
-  result += "END";
+  result.push({ code: "END", cLine: endLine });
 
   return result;
 }

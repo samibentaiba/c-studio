@@ -1,0 +1,36 @@
+// Test: Nested control structures
+ALGORITHM NestedStructures
+VAR
+    i, j, count : INTEGER
+BEGIN
+    count <- 0
+    
+    // Nested FOR loops
+    FOR i <- 1 TO 3 DO
+    BEGIN
+        FOR j <- 1 TO 3 DO
+        BEGIN
+            count <- count + 1
+            PRINT("i=", i, "j=", j, "count=", count)
+        END
+    END
+    
+    PRINT("Total nested iterations:", count)
+    
+    // Nested IF statements
+    i <- 5
+    IF (i > 0) THEN
+    BEGIN
+        IF (i > 3) THEN
+        BEGIN
+            IF (i > 4) THEN
+                PRINT("i > 4")
+            ELSE
+                PRINT("i <= 4 but > 3")
+        END
+        ELSE
+            PRINT("i <= 3 but > 0")
+    END
+    ELSE
+        PRINT("i <= 0")
+END.

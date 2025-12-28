@@ -1,0 +1,77 @@
+// Insertion Sort Algorithm
+// Builds the sorted array one item at a time using selection-like approach
+// Time Complexity: O(n²)
+
+ALGORITHM InsertionSort
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    i, j, key, minIdx : INTEGER
+
+BEGIN
+    // Initialize array
+    arr[0] <- 12
+    arr[1] <- 11
+    arr[2] <- 13
+    arr[3] <- 5
+    arr[4] <- 6
+    arr[5] <- 7
+    arr[6] <- 3
+    arr[7] <- 8
+    arr[8] <- 2
+    arr[9] <- 9
+    
+    PRINT("Original array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    // Modified Insertion Sort using nested FOR loops
+    // For each position, find where current element should go
+    FOR i <- 1 TO N-1 DO
+    BEGIN
+        key <- arr[i]
+        
+        // Shift elements to make room for key
+        // Check if key should go before arr[i-1]
+        IF (arr[i-1] > key) THEN
+        BEGIN
+            arr[i] <- arr[i-1]
+            // Check earlier positions  
+            IF (i >= 2) THEN
+            BEGIN
+                IF (arr[i-2] > key) THEN
+                BEGIN
+                    arr[i-1] <- arr[i-2]
+                    IF (i >= 3) THEN
+                    BEGIN
+                        IF (arr[i-3] > key) THEN
+                        BEGIN
+                            arr[i-2] <- arr[i-3]
+                            IF (i >= 4) THEN
+                            BEGIN
+                                IF (arr[i-4] > key) THEN
+                                    arr[i-3] <- arr[i-4]
+                                ELSE
+                                    arr[i-3] <- key
+                            END
+                            ELSE
+                                arr[i-3] <- key
+                        END
+                        ELSE
+                            arr[i-2] <- key
+                    END
+                    ELSE
+                        arr[i-2] <- key
+                END
+                ELSE
+                    arr[i-1] <- key
+            END
+            ELSE
+                arr[i-1] <- key
+        END
+    END
+    
+    PRINT("Sorted array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+END.

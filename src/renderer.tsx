@@ -30,9 +30,14 @@ import './index.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ShortcutProvider } from './ShortcutContext';
 
 const container = document.getElementById('root');
 if (container) {
     const root = createRoot(container);
-    root.render(<App />);
+    root.render(
+        <ShortcutProvider>
+            <App />
+        </ShortcutProvider>
+    );
 }

@@ -1,0 +1,50 @@
+// Linear Search Algorithm
+// Searches for an element by checking each element sequentially.
+// Time Complexity: O(n)
+
+ALGORITHM LinearSearch
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    target, i, result : INTEGER
+
+FUNCTION LinearSearchFunc(t : INTEGER) : INTEGER
+VAR
+    j : INTEGER
+BEGIN
+    FOR j <- 0 TO N-1 DO
+    BEGIN
+        IF (arr[j] = t) THEN
+            RETURN(j)
+    END
+    RETURN(-1)
+END
+
+BEGIN
+    // Initialize array
+    arr[0] <- 2
+    arr[1] <- 3
+    arr[2] <- 4
+    arr[3] <- 10
+    arr[4] <- 40
+    arr[5] <- 50
+    arr[6] <- 60
+    arr[7] <- 70
+    arr[8] <- 80
+    arr[9] <- 90
+    
+    target <- 40
+    
+    PRINT("Array elements:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    PRINT("Searching for:", target)
+    
+    result <- LinearSearchFunc(target)
+    
+    IF (result <> -1) THEN
+        PRINT("Element found at index:", result)
+    ELSE
+        PRINT("Element not found in array")
+END.

@@ -1,0 +1,39 @@
+// Test: SWITCH/CASE edge cases
+ALGORITHM SwitchCaseEdges
+VAR
+    value : INTEGER
+BEGIN
+    // Standard switch
+    value <- 2
+    SWITCH (value) BEGIN
+        CASE 1: PRINT("One")
+        CASE 2: PRINT("Two")
+        CASE 3: PRINT("Three")
+        DEFAULT: PRINT("Other")
+    END
+    
+    // Switch with zero
+    value <- 0
+    SWITCH (value) BEGIN
+        CASE 0: PRINT("Zero case")
+        CASE 1: PRINT("One")
+        DEFAULT: PRINT("Default")
+    END
+    
+    // Switch hitting default
+    value <- 99
+    SWITCH (value) BEGIN
+        CASE 1: PRINT("One")
+        CASE 2: PRINT("Two")
+        DEFAULT: PRINT("Hit default with 99")
+    END
+    
+    // Negative value switch
+    value <- -1
+    SWITCH (value) BEGIN
+        CASE -1: PRINT("Negative one")
+        CASE 0: PRINT("Zero")
+        CASE 1: PRINT("One")
+        DEFAULT: PRINT("Other negative")
+    END
+END.

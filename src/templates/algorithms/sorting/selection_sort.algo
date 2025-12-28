@@ -1,0 +1,57 @@
+// Selection Sort Algorithm
+// Finds the minimum element and places it at the beginning.
+// Time Complexity: O(n²)
+
+ALGORITHM SelectionSort
+CONST N = 10
+VAR
+    arr : ARRAY[N] OF INTEGER
+    i, j, minIdx, temp : INTEGER
+
+PROCEDURE Swap(VAR a : INTEGER, VAR b : INTEGER)
+VAR
+    temp : INTEGER
+BEGIN
+    temp <- a
+    a <- b
+    b <- temp
+END
+
+BEGIN
+    // Initialize array
+    arr[0] <- 64
+    arr[1] <- 25
+    arr[2] <- 12
+    arr[3] <- 22
+    arr[4] <- 11
+    arr[5] <- 90
+    arr[6] <- 45
+    arr[7] <- 33
+    arr[8] <- 77
+    arr[9] <- 55
+    
+    PRINT("Original array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+    
+    // Selection Sort Algorithm
+    FOR i <- 0 TO N-2 DO
+    BEGIN
+        minIdx <- i
+        
+        // Find minimum element in unsorted part
+        FOR j <- i+1 TO N-1 DO
+        BEGIN
+            IF (arr[j] < arr[minIdx]) THEN
+                minIdx <- j
+        END
+        
+        // Swap minimum with first unsorted element
+        IF (minIdx <> i) THEN
+            Swap(arr[i], arr[minIdx])
+    END
+    
+    PRINT("Sorted array:")
+    FOR i <- 0 TO N-1 DO
+        PRINT(arr[i])
+END.
