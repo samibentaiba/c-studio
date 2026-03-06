@@ -1,6 +1,7 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { MakerDeb } from "@electron-forge/maker-deb";
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
@@ -24,6 +25,12 @@ const config: ForgeConfig = {
   makers: [
     // ZIP for portable installation
     new MakerZIP({}, ["darwin", "win32"]),
+    // Windows Installer
+    new MakerSquirrel({
+      name: "c_studio",
+      setupExe: `C-Studio-Setup-${process.env.npm_package_version || "latest"}.exe`,
+      noMsi: true
+    }),
     // Linux .deb package
     new MakerDeb({}),
   ],

@@ -247,6 +247,14 @@ __attribute__((constructor)) static void _cstudio_init(void) {
 
       execFile(gcc, gccArgs, { cwd: tempDir, env }, (error, stdout, stderr) => {
         if (error) {
+          // Improve error message if GCC is not installed on Linux
+          if (process.platform !== "win32" && (error as any).code === "ENOENT") {
+            resolve({
+              success: false,
+              error: "System 'gcc' compiler not found. Please install GCC (e.g., 'sudo apt install gcc' on Debian/Ubuntu).",
+            });
+            return;
+          }
           resolve({
             success: false,
             error: stderr || error.message || stdout,
@@ -323,7 +331,7 @@ export const checkSyntax = async (
       );
       const { gcc, binDir } = getGccPath();
 
-      if (!fs.existsSync(gcc)) {
+      if (process.platform === "win32" && !fs.existsSync(gcc)) {
         resolve([]);
         return;
       }
@@ -337,7 +345,8 @@ export const checkSyntax = async (
         return;
       }
 
-      const env = { ...process.env, PATH: `${binDir};${process.env.PATH}` };
+      const pathSep = process.platform === "win32" ? ";" : ":";
+      const env = { ...process.env, PATH: binDir ? `${binDir}${pathSep}${process.env.PATH}` : process.env.PATH };
 
       execFile(
         gcc,

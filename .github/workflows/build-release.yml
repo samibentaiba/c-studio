@@ -1,0 +1,67 @@
+name: Build Release Installers
+
+on:
+  workflow_dispatch: # Allow manual triggering
+  push:
+    tags:
+      - 'v*' # Trigger on version tags
+
+jobs:
+  build_linux:
+    name: Build Linux (.deb)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg fakeroot rpm
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Rebuild Native Modules
+        run: npm rebuild
+
+      - name: Make Debian Package
+        run: npm run make -- --platform=linux --target=deb
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: C-Studio-Linux-DEB
+          path: out/make/deb/x64/*.deb
+
+  build_windows:
+    name: Build Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Rebuild Native Modules
+        run: npm rebuild
+
+      - name: Make Windows Executable
+        run: npm run make:clean
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: C-Studio-Windows-EXE
+          path: out/make/squirrel.windows/x64/*.exe

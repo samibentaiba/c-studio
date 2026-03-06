@@ -163,6 +163,53 @@ END.`,
   });
   const [isResizingFlowchart, setIsResizingFlowchart] = useState(false);
 
+  // Workspace persistence
+  const [isWorkspaceLoaded, setIsWorkspaceLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadWorkspace = async () => {
+      try {
+        if (window.electron && window.electron.loadWorkspace) {
+          const result = await window.electron.loadWorkspace();
+          if (result.success && result.data) {
+            if (result.data.files) setFiles(result.data.files);
+            if (result.data.openTabs) setOpenTabs(result.data.openTabs);
+            if (result.data.activeFileId) setActiveFileId(result.data.activeFileId);
+            if (result.data.splitTabs) setSplitTabs(result.data.splitTabs);
+            if (result.data.activeSplitFileId) setActiveSplitFileId(result.data.activeSplitFileId);
+            if (result.data.sidebarWidth) setSidebarWidth(result.data.sidebarWidth);
+            if (result.data.terminalLogs) setTerminalLogs(result.data.terminalLogs);
+            if (result.data.showTerminalTab !== undefined) setShowTerminalTab(result.data.showTerminalTab);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load workspace", e);
+      } finally {
+        setIsWorkspaceLoaded(true);
+      }
+    };
+    loadWorkspace();
+  }, []);
+
+  useEffect(() => {
+    if (!isWorkspaceLoaded) return;
+    const saveTimer = setTimeout(() => {
+      if (window.electron && window.electron.saveWorkspace) {
+        window.electron.saveWorkspace({
+          files,
+          openTabs,
+          activeFileId,
+          splitTabs,
+          activeSplitFileId,
+          sidebarWidth,
+          showTerminalTab,
+          terminalLogs: terminalLogs.slice(-100) // Keep the last 100 lines so it doesn't grow huge
+        });
+      }
+    }, 1000); // Debounce to allow typing
+    return () => clearTimeout(saveTimer);
+  }, [files, openTabs, activeFileId, splitTabs, activeSplitFileId, sidebarWidth, showTerminalTab, terminalLogs, isWorkspaceLoaded]);
+
   // Recursive search for active file
   const findFile = (
     items: FileSystemItem[],

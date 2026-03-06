@@ -40,4 +40,8 @@ contextBridge.exposeInMainWorld("electron", {
   // Shell terminal
   executeShellCommand: (command: string, cwd?: string) => ipcRenderer.invoke("execute-shell-command", command, cwd),
   saveWorkspaceToTemp: (files: unknown) => ipcRenderer.invoke("save-workspace-to-temp", files),
+
+  // Workspace saving/loading
+  saveWorkspace: (data: unknown) => ipcRenderer.invoke("save-workspace", data),
+  loadWorkspace: () => ipcRenderer.invoke("load-workspace"),
 });

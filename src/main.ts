@@ -5,6 +5,16 @@ import started from "electron-squirrel-startup";
 import { compileProject, checkSyntax, runBinary } from "./compiler";
 import { ChildProcess } from "child_process";
 
+// ===== Crash Prevention =====
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  // Prevent crash
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Prevent crash
+});
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -44,6 +54,31 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
+  const workspacePath = path.join(app.getPath("userData"), "c-studio-workspace.json");
+
+  ipcMain.handle("save-workspace", async (event, workspaceData) => {
+    try {
+      fs.writeFileSync(workspacePath, JSON.stringify(workspaceData), "utf-8");
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to save workspace:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
+  ipcMain.handle("load-workspace", async () => {
+    try {
+      if (fs.existsSync(workspacePath)) {
+        const data = fs.readFileSync(workspacePath, "utf-8");
+        return { success: true, data: JSON.parse(data) };
+      }
+      return { success: true, data: null };
+    } catch (error) {
+      console.error("Failed to load workspace:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  });
+
   ipcMain.handle("compile-project", async (event, files, activeFileId) => {
     try {
       return await compileProject(files, activeFileId);
