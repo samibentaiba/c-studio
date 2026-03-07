@@ -9,8 +9,9 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    // Include helper scripts and clang-format WASM (MinGW downloaded by installer)
+    // Include MinGW compiler, helper scripts and clang-format WASM
     extraResource: [
+      "./resources/mingw64",
       "./public/clang-format.wasm",
       "./install.bat",
       "./uninstall.bat",
